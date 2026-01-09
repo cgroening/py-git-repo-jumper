@@ -301,9 +301,9 @@ def format_repo_table_line(repo: Dict[str, str], git_info: Dict[str, any],
 
     # Truncate path intelligently (show end if too long)
     path = repo["path"]
-    if len(path) > max_path-2:
+    if len(path) > max_path:
         # Show beginning and end
-        path = "..." + path[-(max_path-5):]
+        path = "..." + path[-(max_path-3):]
     path = path.ljust(max_path)
 
     # Status icon (no color markup for InquirerPy)
@@ -322,11 +322,11 @@ def create_table_header(max_name: int = 20, max_branch: int = 10,
     table = Table(show_header=True, header_style="bold magenta", box=None, padding=(0, 1))
 
     table.add_column("", style="dim", width=1)  # Icon column
-    table.add_column(" Name", style="bold cyan", width=max_name, no_wrap=True)
-    table.add_column(" Branch", style="bold green", width=max_branch, no_wrap=True)
+    table.add_column("Name", style="bold cyan", width=max_name, no_wrap=True)
+    table.add_column("Branch", style="bold green", width=max_branch, no_wrap=True)
     table.add_column("Status", style="bold yellow", width=max_status, no_wrap=True)
-    table.add_column(" GitHub Repo Name", style="bold blue", width=max_github, no_wrap=True)
-    table.add_column("  Path", style="bold dim", width=max_path, no_wrap=True)
+    table.add_column("GitHub", style="bold blue", width=max_github, no_wrap=True)
+    table.add_column("Path", style="bold dim", width=max_path, no_wrap=True)
 
     console.print(table)
 
@@ -479,7 +479,7 @@ def main():
     max_github = min(max(max_github, 15), 25)
 
     # Display table header with Rich styling
-    create_table_header(max_name+1, max_branch+2, 15, max_github, 35)
+    create_table_header(max_name, max_branch, 15, max_github, 35)
     console.print()
 
     # Select repository with fuzzy finder (table-like format with Rich colors)
