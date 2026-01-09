@@ -168,6 +168,10 @@ def get_github_repo_name(repo_path: str) -> str:
         # Remove .git suffix if present
         repo_part = repo_part.replace(".git", "")
 
+        # Remove GitHub username "cgroening/" if present
+        # TODO: Get the username form the config file instead of hardcoding
+        repo_part = repo_part.replace("cgroening/", "")
+
         return repo_part
 
     except (subprocess.TimeoutExpired, Exception):
