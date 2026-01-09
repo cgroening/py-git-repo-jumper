@@ -1,0 +1,12 @@
+
+# Sample Config
+
+# Git program to use
+git-program: lazygit
+
+# List of repositories
+repos:
+  - name: Git Test
+    path: /Users/cgroening/Downloads/gittest
+  - name: Dotfiles
+    path: /Users/cgroening/Dotfiles/
