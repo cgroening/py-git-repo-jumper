@@ -67,6 +67,9 @@ def load_config(config_path: str = None) -> Tuple[List[Dict[str, str]], str, Pat
                     path = Path(repo["path"]).expanduser()
                     repo["name"] = path.name
 
+            # Filter out repos with show: false
+            repos = [repo for repo in repos if repo.get("show", True)]
+
             # Show which config was used if custom was specified
             if config_path is not None and config_type == "default":
                 console.print()
@@ -458,6 +461,32 @@ def main():
             "repo": repo,
             "git_info": git_info
         })
+
+    # Sort by repository name (case-insensitive)
+    repos_with_status.sort(key=lambda r: r["repo"]["name"].lower())
+
+    # Separate valid and invalid repos
+    valid_repos = [r for r in repos_with_status if r["git_info"]["valid"]]
+    invalid_repos = [r for r in repos_with_status if not r["git_info"]["valid"]]
+
+
+    # Show invalid repos in red panel if any exist
+    if invalid_repos:
+        console.print()
+        console.print(Panel(
+            "[bold red]⚠ Repositories not found or invalid:[/bold red]\n\n" +
+            "\n".join([
+                f"  [red]✗[/red] [yellow]{repo['repo']['name']}[/yellow] - [dim]{repo['git_info']['error']}[/dim]\n"
+                f"    [dim]Path: {repo['repo']['path']}[/dim]"
+                for repo in invalid_repos
+            ]),
+            border_style="red",
+            padding=(1, 2),
+            title="[red]Errors[/red]",
+            title_align="left"
+        ))
+        console.print()
+
 
     # Only valid repos for selection
     valid_repos = [r for r in repos_with_status if r["git_info"]["valid"]]
