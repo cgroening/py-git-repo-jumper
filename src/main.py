@@ -22,7 +22,7 @@ console = Console()
 
 
 def load_config(config_path: str | None = None) \
--> Tuple[List[Dict[str, str]], str, str, Path]:
+-> Tuple[List[Dict[str, str]], str, str, Path] | None:
     """
     Loads the repository configuration from the YAML file.
 
@@ -35,7 +35,7 @@ def load_config(config_path: str | None = None) \
 
     Returns:
     --------
-    Tuple[List[Dict[str, str]], str, str, Path]
+    Tuple[List[Dict[str, str]], str, str, Path] | None
         A tuple containing:
         - List of repository dictionaries with keys: name, path, show (optional)
         - GitHub username (str)
@@ -91,6 +91,9 @@ def load_config(config_path: str | None = None) \
                 padding=(1, 2)
             ))
             sys.exit(1)
+
+    # If this code is reached, no valid config was found
+    return None
 
 
 def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
@@ -153,7 +156,6 @@ def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
 
     except (subprocess.TimeoutExpired, Exception):
         return "-"
-
 
 def get_git_status(repo_path: str, github_username: str = "") -> Dict[str, any]:
     """Determines the git status of a repository."""
