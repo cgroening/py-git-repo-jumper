@@ -9,23 +9,38 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Tuple
 
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 import yaml
 from rich.console import Console
 from rich.panel import Panel
-from rich.table import Table
+
 
 console = Console()
 
 
-def load_config(config_path: str = None) -> Tuple[List[Dict[str, str]], str, Path]:
+def load_config(config_path: str | None = None) \
+-> Tuple[List[Dict[str, str]], str, str, Path]:
     """
     Loads the repository configuration from the YAML file.
+
     Tries custom config path first, then falls back to script directory.
-    Returns a tuple of (repos list, git_program name, config_file_path).
+
+    Parameters:
+    -----------
+    config_path : str | None
+        Path to custom config file. If None, uses default in script directory.
+
+    Returns:
+    --------
+    Tuple[List[Dict[str, str]], str, str, Path]
+        A tuple containing:
+        - List of repository dictionaries with keys: name, path, show (optional)
+        - GitHub username (str)
+        - Git program name (str)
+        - Path to the actual config file used (Path)
     """
     script_dir = Path(__file__).parent
     default_config = script_dir / "config.yaml"
@@ -34,34 +49,24 @@ def load_config(config_path: str = None) -> Tuple[List[Dict[str, str]], str, Pat
     configs_to_try = []
 
     if config_path is not None:
-        # Custom config was specified - try it first
+        # Custom config is given - try it first
         custom_path = Path(config_path)
         configs_to_try.append(("custom", custom_path))
-        # Add script directory as fallback
-        configs_to_try.append(("default", default_config))
-    else:
-        # No custom config - only try script directory
-        configs_to_try.append(("default", default_config))
+
+    # Add script directory as fallback
+    configs_to_try.append(("default", default_config))
 
     # Try each config in order
-    last_error = None
-    for config_type, config_file in configs_to_try:
+    for _, config_file in configs_to_try:
         try:
-            with open(config_file, 'r') as f:
+            # Load YAML file and get git program + repos
+            with open(config_file, "r") as f:
                 data = yaml.safe_load(f)
-
-            # Successfully loaded - process the data
-            if isinstance(data, list):
-                repos = data
-                git_program = "lazygit"
-            elif isinstance(data, dict):
                 repos = data.get("repos", [])
+                github_username = data.get("github-username", "")
                 git_program = data.get("git-program", "lazygit")
-            else:
-                repos = []
-                git_program = "lazygit"
 
-            # Auto-generate names from folder if not provided
+            # Use folder name as repo name if name is missing
             for repo in repos:
                 if "name" not in repo or not repo["name"]:
                     path = Path(repo["path"]).expanduser()
@@ -70,28 +75,11 @@ def load_config(config_path: str = None) -> Tuple[List[Dict[str, str]], str, Pat
             # Filter out repos with show: false
             repos = [repo for repo in repos if repo.get("show", True)]
 
-            # Show which config was used if custom was specified
-            if config_path is not None and config_type == "default":
-                console.print()
-                console.print(Panel(
-                    f"[yellow]⚠ Custom config not found[/yellow]\n"
-                    f"[dim]Using fallback: [cyan]{config_file}[/cyan][/dim]",
-                    border_style="yellow",
-                    padding=(0, 2)
-                ))
-                console.print()
+            return repos, github_username, git_program, config_file.absolute()
 
-            # Return the actual config file path that was used
-            return repos, git_program, config_file.absolute()
-
-        except FileNotFoundError as e:
-            last_error = e
-            if config_type == "custom":
-                # Custom config not found, will try fallback
-                continue
-            else:
-                # Default config also not found - this is an error
-                break
+        except FileNotFoundError:
+            console.print("[red]✗ Config file not found![/red]")
+            break
         except yaml.YAMLError as e:
             # YAML parsing error - don't try fallback, this is a real error
             console.print()
@@ -104,33 +92,22 @@ def load_config(config_path: str = None) -> Tuple[List[Dict[str, str]], str, Pat
             ))
             sys.exit(1)
 
-    # If we get here, no config was found
-    console.print()
-    if config_path is not None:
-        console.print(Panel(
-            f"[red]✗ Config file not found![/red]\n\n"
-            f"[yellow]Tried:[/yellow]\n"
-            f"  1. Custom: [cyan]{Path(config_path).absolute()}[/cyan]\n"
-            f"  2. Default: [cyan]{default_config.absolute()}[/cyan]\n\n"
-            f"[dim]Tip: Place config.yaml in {script_dir}[/dim]",
-            border_style="red",
-            padding=(1, 2)
-        ))
-    else:
-        console.print(Panel(
-            f"[red]✗ Config file not found![/red]\n\n"
-            f"[yellow]Looking for:[/yellow] [cyan]{default_config}[/cyan]\n\n"
-            f"[dim]Tip: Place config.yaml in {script_dir}[/dim]",
-            border_style="red",
-            padding=(1, 2)
-        ))
-    sys.exit(1)
 
-
-def get_github_repo_name(repo_path: str) -> str:
+def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
     """
-    Extracts GitHub repository name from git remote URL.
-    Returns "owner/repo" format or "-" if not a GitHub repo.
+    Extracts the GitHub repository name from git remote URL.
+
+    Parameters:
+    -----------
+    repo_path : str
+        Path to the remote repository.
+    github_username : str
+        GitHub username to remove from the repo name if present.
+
+    Returns:
+    --------
+    str
+        GitHub repository name in "owner/repo" format or "-" if not found.
     """
     path = Path(repo_path).expanduser()
 
@@ -141,9 +118,7 @@ def get_github_repo_name(repo_path: str) -> str:
         # Get remote URL
         remote_result = subprocess.run(
             ["git", "-C", str(path), "remote", "get-url", "origin"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            capture_output=True, text=True, timeout=5
         )
 
         if remote_result.returncode != 0:
@@ -172,8 +147,7 @@ def get_github_repo_name(repo_path: str) -> str:
         repo_part = repo_part.replace(".git", "")
 
         # Remove GitHub username "cgroening/" if present
-        # TODO: Get the username form the config file instead of hardcoding
-        repo_part = repo_part.replace("cgroening/", "")
+        repo_part = repo_part.replace(f"{github_username}/", "")
 
         return repo_part
 
@@ -181,7 +155,7 @@ def get_github_repo_name(repo_path: str) -> str:
         return "-"
 
 
-def get_git_status(repo_path: str) -> Dict[str, any]:
+def get_git_status(repo_path: str, github_username: str = "") -> Dict[str, any]:
     """Determines the git status of a repository."""
     path = Path(repo_path).expanduser()
 
@@ -245,7 +219,7 @@ def get_git_status(repo_path: str) -> Dict[str, any]:
                 status_text += f" ↑{ahead}"
 
         # Get GitHub repo name
-        github_repo = get_github_repo_name(repo_path)
+        github_repo = get_github_repo_name(repo_path, github_username)
 
         return {
             "valid": True,
@@ -417,7 +391,7 @@ def main():
     console.clear()
 
     # Load configuration (will use script directory if no config specified)
-    repos, config_program, config_file_path = load_config(args.config)
+    repos, github_username, config_program, config_file_path = load_config(args.config)
 
     # CLI argument takes precedence over config file
     git_program = args.program if args.program else config_program
@@ -456,7 +430,7 @@ def main():
     # Get git status for all repos
     repos_with_status = []
     for repo in repos:
-        git_info = get_git_status(repo["path"])
+        git_info = get_git_status(repo["path"], github_username)
         repos_with_status.append({
             "repo": repo,
             "git_info": git_info
