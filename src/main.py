@@ -46,7 +46,7 @@ def load_config(config_path: str | None = None) \
     default_config = script_dir / "config.yaml"
 
     # Determine which config file to try
-    configs_to_try = []
+    configs_to_try: List[Tuple[str, Path]] = []
 
     if config_path is not None:
         # Custom config is given - try it first
@@ -158,7 +158,30 @@ def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
         return "-"
 
 def get_git_status(repo_path: str, github_username: str = "") -> Dict[str, any]:
-    """Determines the git status of a repository."""
+    """
+    Determines the git status of a repository.
+
+    Parameters:
+    -----------
+    repo_path : str
+        Path to the repository.
+    github_username : str
+        GitHub username to use when extracting repo name.
+
+    Returns:
+    --------
+    Dict[str, any]
+        A dictionary with keys:
+        - valid: bool
+        - error: str | None
+        - branch: str
+        - status: str
+        - changes: int
+        - github_repo: str
+    """
+    # TODO: Replace the returned dict with a dataclass for better type safety
+
+    # Get path object and check if it exists and is a git repo
     path = Path(repo_path).expanduser()
 
     if not path.exists():
@@ -181,32 +204,35 @@ def get_git_status(repo_path: str, github_username: str = "") -> Dict[str, any]:
             "github_repo": "-"
         }
 
+    # Gather git information
     try:
-        # Get current branch
+        # Current branch
         branch_result = subprocess.run(
             ["git", "-C", str(path), "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            capture_output=True, text=True, timeout=5
         )
-        branch = branch_result.stdout.strip() if branch_result.returncode == 0 else "unknown"
+
+        if branch_result.returncode == 0:
+            branch = branch_result.stdout.strip()
+        else:
+            branch = "unknown"
 
         # Get changes
         status_result = subprocess.run(
             ["git", "-C", str(path), "status", "--porcelain"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            capture_output=True, text=True, timeout=5
         )
 
-        changes = len(status_result.stdout.strip().split('\n')) if status_result.stdout.strip() else 0
+        if status_result.stdout.strip():
+            changes = len(status_result.stdout.strip().split('\n'))
+        else:
+            changes = 0
 
         # Check upstream status
         upstream_result = subprocess.run(
-            ["git", "-C", str(path), "rev-list", "--count", "--left-right", "@{upstream}...HEAD"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["git", "-C", str(path), "rev-list", "--count", "--left-right",
+             "@{upstream}...HEAD"],
+            capture_output=True, text=True, timeout=5
         )
 
         status_text = "✓ Clean"
