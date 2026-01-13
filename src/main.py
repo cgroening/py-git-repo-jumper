@@ -1,4 +1,3 @@
-
 """
 Git Repository Selector
 
@@ -8,6 +7,7 @@ Reads git repos from config.yaml and opens the selected repo in a git tool.
 import argparse
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict, Tuple
 
@@ -16,9 +16,21 @@ from InquirerPy.base.control import Choice
 import yaml
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 
 
 console = Console()
+
+
+@dataclass(slots=True, frozen=True)
+class GitStatus:
+    """Git status information for a repository."""
+    valid: bool
+    error: str | None
+    branch: str
+    status: str
+    changes: int
+    github_repo: str
 
 
 def load_config(config_path: str | None = None) \
@@ -149,7 +161,7 @@ def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
         # Remove .git suffix if present
         repo_part = repo_part.replace(".git", "")
 
-        # Remove GitHub username "cgroening/" if present
+        # Remove GitHub username from path if present
         repo_part = repo_part.replace(f"{github_username}/", "")
 
         return repo_part
@@ -157,7 +169,8 @@ def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
     except (subprocess.TimeoutExpired, Exception):
         return "-"
 
-def get_git_status(repo_path: str, github_username: str = "") -> Dict[str, any]:
+def get_git_status(repo_path: str, github_username: str = "") \
+    -> Dict[str, str | int | bool | None]:
     """
     Determines the git status of a repository.
 
@@ -170,7 +183,7 @@ def get_git_status(repo_path: str, github_username: str = "") -> Dict[str, any]:
 
     Returns:
     --------
-    Dict[str, any]
+    Dict[str, str | int | bool | None]
         A dictionary with keys:
         - valid: bool
         - error: str | None
@@ -277,71 +290,109 @@ def get_git_status(repo_path: str, github_username: str = "") -> Dict[str, any]:
             "github_repo": "-"
         }
 
-
-def format_repo_choice(repo: Dict[str, str], git_info: Dict[str, any]) -> str:
-    """Formats a repository entry for questionary."""
-    if git_info["valid"]:
-        status_icon = "✓" if git_info["changes"] == 0 else "⚡"
-        return f"{status_icon} {repo['name']} [{git_info['branch']}] - {git_info['status']}"
-    else:
-        return f"✗ {repo['name']} - {git_info['error']}"
-
-
-def format_repo_table_line(repo: Dict[str, str], git_info: Dict[str, any],
-                           max_name: int = 20, max_branch: int = 10,
-                           max_status: int = 15, max_github: int = 20,
-                           max_path: int = 30) -> str:
+def format_repo_table_line(
+    repo: Dict[str, str], git_info: Dict[str, str | int | bool | None],
+    max_name: int = 20, max_branch: int = 10, max_status: int = 15,
+    max_github: int = 20, max_path: int = 30
+) -> str:
     """
     Formats a repository entry as a table row for fuzzy finder.
-    Returns plain text (InquirerPy doesn't support Rich markup).
+    Returns plain text for InquirerPy.
+
+    Parameters:
+    -----------
+    repo : Dict[str, str]
+        Repository dictionary with keys: name, path.
+    git_info : Dict[str, str | int | bool | None]
+        Git information dictionary with keys: valid, branch, status, changes,
+        github_repo, error.
+    max_name : int
+        Maximum width for the name column.
+    max_branch : int
+        Maximum width for the branch column.
+    max_status : int
+        Maximum width for the status column.
+    max_github : int
+        Maximum width for the GitHub repo column.
+    max_path : int
+        Maximum width for the path column.
+
+    Returns:
+    --------
+    str
+        Formatted table row as a string. Cells are separated by '│'.
     """
+    # Show error line if repo is invalid
     if not git_info["valid"]:
-        # Invalid repo - show error
         name = repo["name"][:max_name].ljust(max_name)
-        error = git_info["error"][:max_status].ljust(max_status)
+        error = str(git_info["error"] or "")[:max_status].ljust(max_status)
         path = repo["path"][:max_path].ljust(max_path)
         return f"✗ {name} │ {'':10} │ {error} │ {'':20} │ {path}"
 
     # Format each column with truncation and padding
     name = repo["name"][:max_name].ljust(max_name)
-    branch = git_info["branch"][:max_branch].ljust(max_branch)
-    status = git_info["status"][:max_status].ljust(max_status)
+    branch = str(git_info["branch"] or "")[:max_branch].ljust(max_branch)
+    status = str(git_info["status"] or "")[:max_status].ljust(max_status)
     github = git_info["github_repo"][:max_github].ljust(max_github)
 
     # Truncate path intelligently (show end if too long)
     path = repo["path"]
     if len(path) > max_path-2:
-        # Show beginning and end
         path = "..." + path[-(max_path-5):]
     path = path.ljust(max_path)
 
-    # Status icon (no color markup for InquirerPy)
+    # Status icon
     icon = "✓" if git_info["changes"] == 0 else "≠"
 
     return f"{icon} {name} │ {branch} │ {status} │ {github} │ {path}"
 
+def create_table_header(
+    max_name: int = 20, max_branch: int = 10, max_status: int = 15,
+    max_github: int = 20, max_path: int = 30
+) -> None:
+    """
+    Creates a styled table header for the fuzzy finder using Rich.
 
-def create_table_header(max_name: int = 20, max_branch: int = 10,
-                       max_status: int = 15, max_github: int = 20,
-                       max_path: int = 30) -> None:
-    """Creates a styled table header for the fuzzy finder using Rich."""
+    Parameters:
+    -----------
+    max_name : int
+        Maximum width for the name column.
+    max_branch : int
+        Maximum width for the branch column.
+    max_status : int
+        Maximum width for the status column.
+    max_github : int
+        Maximum width for the GitHub repo column.
+    max_path : int
+        Maximum width for the path column.
     from rich.table import Table
-
+    """
     # Create a Rich table for the header
-    table = Table(show_header=True, header_style="bold magenta", box=None, padding=(0, 1))
+    table = Table(
+        show_header=True, header_style="bold magenta", box=None, padding=(0, 1)
+    )
 
-    table.add_column("", style="dim", width=1)  # Icon column
-    table.add_column(" Name", style="bold cyan", width=max_name, no_wrap=True)
-    table.add_column(" Branch", style="bold green", width=max_branch, no_wrap=True)
-    table.add_column("Status", style="bold yellow", width=max_status, no_wrap=True)
-    table.add_column(" GitHub Repo Name", style="bold blue", width=max_github, no_wrap=True)
-    table.add_column("  Path", style="bold dim", width=max_path, no_wrap=True)
+    ac = table.add_column
+    ac("", style="dim", width=1)  # Icon column
+    ac(" Name", style="bold cyan", width=max_name, no_wrap=True)
+    ac(" Branch", style="bold green", width=max_branch, no_wrap=True)
+    ac("Status", style="bold yellow", width=max_status, no_wrap=True)
+    ac(" GitHub Repo Name", style="bold blue", width=max_github, no_wrap=True)
+    ac("  Path", style="bold dim", width=max_path, no_wrap=True)
 
     console.print(table)
 
-
 def open_in_git_program(repo_path: str, git_program: str = "lazygit") -> None:
-    """Opens the repository in the specified git program."""
+    """
+    Opens the repository in the specified git program.
+
+    Parameters:
+    -----------
+    repo_path : str
+        Path to the repository.
+    git_program : str
+        Git program to use (e.g., lazygit, gitui, tig).
+    """
     path = Path(repo_path).expanduser()
 
     # Program-specific commands
@@ -349,14 +400,14 @@ def open_in_git_program(repo_path: str, git_program: str = "lazygit") -> None:
         "lazygit": ["lazygit", "-p", str(path)],
         "gitui": ["gitui", "-d", str(path)],
         "tig": ["tig", "-C", str(path)],
-        "gh": ["gh", "repo", "view", "--web"],  # Opens in browser
+        "gh": ["gh", "repo", "view", "--web"]
     }
 
     # Use custom command if provided, otherwise use known commands
     if git_program in commands:
         cmd = commands[git_program]
     else:
-        # For unknown programs, assume they accept -p or -C flag
+        # For unknown programs, assume they accept -p flag
         cmd = [git_program, "-p", str(path)]
 
     try:
@@ -367,16 +418,14 @@ def open_in_git_program(repo_path: str, git_program: str = "lazygit") -> None:
             subprocess.run(cmd, check=True)
     except FileNotFoundError:
         console.print(f"[red]Error: {git_program} is not installed![/red]")
-        console.print(f"Install it or specify a different program with --program flag")
         sys.exit(1)
     except subprocess.CalledProcessError as e:
         console.print(f"[red]Error opening {git_program}: {e}[/red]")
         sys.exit(1)
 
-
-def cleanup_old_last_repo(config_dir: Path, keep_last_repo: bool = True):
+def cleanup_old_last_repo(config_dir: Path) -> None:
     """
-    Optionally cleans up old last-repo.txt file.
+    Cleans up the last-repo.txt file.
 
     Args:
         config_dir: Directory where config file is located
@@ -384,19 +433,27 @@ def cleanup_old_last_repo(config_dir: Path, keep_last_repo: bool = True):
     """
     last_repo_file = config_dir / "last-repo.txt"
 
-    if not keep_last_repo and last_repo_file.exists():
+    if last_repo_file.exists():
         try:
             last_repo_file.unlink()
-        except Exception as e:
+        except Exception:
             # Silently ignore errors - this is just cleanup
             pass
 
 
 def main():
-    """Main function."""
+    """
+    Main function.
+
+    This function orchestrates loading the config, displaying the repository
+    selection interface, and opening the selected repository in the specified
+    git program.
+    """
+    # TODO: Clean up this function and break into smaller functions
+
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description="Select and open a git repository in your preferred git tool"
+        description="Select and open a git repository in a git tool"
     )
     parser.add_argument(
         "-p", "--program",
@@ -419,33 +476,37 @@ def main():
     console.clear()
 
     # Load configuration (will use script directory if no config specified)
-    repos, github_username, config_program, config_file_path = load_config(args.config)
+    config_result = load_config(args.config)
+    if config_result is None:
+        console.print("[red]✗ Failed to load configuration. Exiting.[/red]")
+        sys.exit(1)
+    repos, github_username, cfg_program, config_path = config_result
 
     # CLI argument takes precedence over config file
-    git_program = args.program if args.program else config_program
+    git_program = args.program if args.program else cfg_program
 
     # Determine directory for last-repo.txt (same as config file)
-    config_dir = config_file_path.parent
+    config_dir = config_path.parent
     last_repo_file = config_dir / "last-repo.txt"
 
     # Optional cleanup of old last-repo.txt
     if args.clean:
-        cleanup_old_last_repo(config_dir, keep_last_repo=False)
+        cleanup_old_last_repo(config_dir)
 
     # Header with Rich styling
     console.print()
     console.print(Panel.fit(
         f"[bold cyan]📦 Git Repository Selector[/bold cyan]\n"
         f"[dim]Select a repository to open in [bold]{git_program}[/bold][/dim]\n"
-        f"[dim italic]Type to filter • ↑/↓ to navigate • Enter to select[/dim italic]",
+        f"[dim]Type to filter • ↑/↓ to navigate • Enter to select[/dim]",
         border_style="cyan",
         padding=(1, 2)
     ))
     console.print()
 
+    # Print warning and config path, then exit if no repos found
     if not repos:
-        # Show which config file was used
-        config_used = args.config if args.config else str(config_file_path)
+        config_used = args.config if args.config else str(config_path)
         console.print()
         console.print(Panel(
             f"[yellow]⚠ No repositories found in config[/yellow]\n"
@@ -471,24 +532,22 @@ def main():
     valid_repos = [r for r in repos_with_status if r["git_info"]["valid"]]
     invalid_repos = [r for r in repos_with_status if not r["git_info"]["valid"]]
 
-
     # Show invalid repos in red panel if any exist
     if invalid_repos:
         console.print()
         console.print(Panel(
             "[bold red]⚠ Repositories not found or invalid:[/bold red]\n\n" +
             "\n".join([
-                f"  [red]✗[/red] [yellow]{repo['repo']['name']}[/yellow] - [dim]{repo['git_info']['error']}[/dim]\n"
+                f"  [red]✗[/red] [yellow]{repo['repo']['name']}[/yellow] - " +
+                        "[dim]{repo['git_info']['error']}[/dim]\n"
                 f"    [dim]Path: {repo['repo']['path']}[/dim]"
                 for repo in invalid_repos
             ]),
-            border_style="red",
-            padding=(1, 2),
+            border_style="red", padding=(1, 2),
             title="[red]Errors[/red]",
             title_align="left"
         ))
         console.print()
-
 
     # Only valid repos for selection
     valid_repos = [r for r in repos_with_status if r["git_info"]["valid"]]
@@ -497,34 +556,39 @@ def main():
         console.print()
         console.print(Panel(
             "[red]✗ No valid git repositories found![/red]\n"
-            "[dim]Check that paths in config.yaml point to valid git repositories[/dim]",
+            "[dim]Check that paths in config.yaml point to valid git repos[/dim]",
             border_style="red",
             padding=(1, 2)
         ))
         sys.exit(1)
 
     # Calculate max widths for table columns
-    max_name = max(len(r["repo"]["name"]) for r in valid_repos) if valid_repos else 20
+    max_name = max(len(r["repo"]["name"])
+                   for r in valid_repos) if valid_repos else 20
     max_name = min(max(max_name, 15), 30)  # Between 15 and 30 chars
 
-    max_branch = max(len(r["git_info"]["branch"]) for r in valid_repos) if valid_repos else 10
-    max_branch = min(max(max_branch, 8), 15)
+    max_branch = max(len(r["git_info"]["branch"])
+                     for r in valid_repos) if valid_repos else 10
+    max_branch = min(max(max_branch, 8), 15)  # Between 8 and 15 chars
 
-    max_github = max(len(r["git_info"]["github_repo"]) for r in valid_repos) if valid_repos else 20
-    max_github = min(max(max_github, 15), 25)
+    max_github = max(len(r["git_info"]["github_repo"])
+                     for r in valid_repos) if valid_repos else 20
+    max_github = min(max(max_github, 15), 25)  # Between 15 and 25 chars
 
     # Display table header with Rich styling
     create_table_header(max_name+1, max_branch+2, 15, max_github, 35)
     console.print()
 
-    # Select repository with fuzzy finder (table-like format with Rich colors)
+    # Select repository with fuzzy finder (table-like format)
     choices = []
     repo_map = {}
 
     for r in valid_repos:
         repo = r["repo"]
         git_info = r["git_info"]
-        choice_text = format_repo_table_line(repo, git_info, max_name, max_branch, 15, max_github, 35)
+        choice_text = format_repo_table_line(
+            repo, git_info, max_name, max_branch, 15, max_github, 35
+        )
         choices.append(Choice(value=repo, name=choice_text))
         repo_map[choice_text] = repo
 
@@ -547,13 +611,17 @@ def main():
     if selected:
         console.print()
         console.print(Panel(
-            f"[bold green]✓[/bold green] Opening [bold cyan]{selected['name']}[/bold cyan] in [bold magenta]{git_program}[/bold magenta]",
+            "[bold green]✓[/bold green] Opening " +
+                "[bold cyan]{selected['name']}[/bold cyan] in " +
+                f"[bold magenta]{git_program}[/bold magenta]",
             border_style="green",
             padding=(0, 2)
         ))
         open_in_git_program(selected["path"], git_program)
 
         # Save path in last-repo.txt in same directory as config
+        # This can be used by a shell function to change the current directory
+        # of the terminal to the last opened repo after the git program exits
         try:
             with open(last_repo_file, "w") as f:
                 f.write(selected["path"])
