@@ -328,7 +328,7 @@ def get_git_status(repo_path: str, github_username: str = "") -> GitStatus:
 def format_repo_table_line(
     repo_name: str, repo_path: str, git_info: GitStatus,
     max_name: int = 20, max_branch: int = 10, max_status: int = 15,
-    max_github: int = 20, max_path: int = 30
+    max_github: int = 20, max_path: int = 60
 ) -> str:
     """
     Formats a repository entry as a table row for fuzzy finder.
@@ -386,7 +386,7 @@ def format_repo_table_line(
 
 def create_table_header(
     max_name: int = 20, max_branch: int = 10, max_status: int = 15,
-    max_github: int = 20, max_path: int = 30
+    max_github: int = 20, max_path: int = 60
 ) -> None:
     """
     Creates a styled table header for the fuzzy finder using Rich.
