@@ -22,6 +22,11 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
 - 🏷️ **Filtering** – Hide repositories with `show: false`
 - 🔤 **Alphabetical Sorting** – Repositories sorted by name
 
+### Planned features
+
+- Recent Repositories History
+- Favorite/Bookmarked Repositories
+
 ## 🚀 Installation
 
 ### Prerequisites
