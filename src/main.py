@@ -24,13 +24,49 @@ console = Console()
 
 @dataclass(slots=True, frozen=True)
 class GitStatus:
-    """Git status information for a repository."""
+    """
+    Git status information for a repository.
+
+    Attributes:
+    -----------
+    valid : bool
+        Whether the repository path is valid.
+    error : str | None
+        Error message if invalid, else None.
+    branch : str
+        Current branch name.
+    status : str
+        Status summary (clean, changes, ahead/behind).
+    changes : int
+        Number of uncommitted changes.
+    github_repo : str
+        GitHub repository name or "-".
+    """
     valid: bool
     error: str | None
     branch: str
     status: str
     changes: int
     github_repo: str
+
+
+@dataclass(slots=True, frozen=True)
+class RepoWithStatus:
+    """
+    Repository name + path with its git status.
+
+    Attributes:
+    -----------
+    name : str
+        Repository name.
+    path : str
+        Repository path.
+    git_info : GitStatus
+        Git status information.
+    """
+    name : str
+    path : str
+    git_info: GitStatus
 
 
 def load_config(config_path: str | None = None) \
@@ -169,8 +205,7 @@ def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
     except (subprocess.TimeoutExpired, Exception):
         return "-"
 
-def get_git_status(repo_path: str, github_username: str = "") \
-    -> Dict[str, str | int | bool | None]:
+def get_git_status(repo_path: str, github_username: str = "") -> GitStatus:
     """
     Determines the git status of a repository.
 
@@ -183,39 +218,38 @@ def get_git_status(repo_path: str, github_username: str = "") \
 
     Returns:
     --------
-    Dict[str, str | int | bool | None]
-        A dictionary with keys:
-        - valid: bool
-        - error: str | None
-        - branch: str
-        - status: str
-        - changes: int
-        - github_repo: str
+    GitStatus
+        A GitStatus object containing:
+        - valid (bool): Whether the path is a valid git repository.
+        - error (str | None): Error message if invalid, else None.
+        - branch (str): Current branch name.
+        - status (str): Status summary (clean, changes, ahead/behind).
+        - changes (int): Number of uncommitted changes.
+        - github_repo (str): GitHub repository name or "-".
     """
-    # TODO: Replace the returned dict with a dataclass for better type safety
 
     # Get path object and check if it exists and is a git repo
     path = Path(repo_path).expanduser()
 
     if not path.exists():
-        return {
-            "valid": False,
-            "error": "Path does not exist",
-            "branch": "",
-            "status": "",
-            "changes": 0,
-            "github_repo": "-"
-        }
+        return GitStatus(
+            valid=False,
+            error="Path does not exist",
+            branch="",
+            status="",
+            changes=0,
+            github_repo="-"
+        )
 
     if not (path / ".git").exists():
-        return {
-            "valid": False,
-            "error": "Not a git repository",
-            "branch": "",
-            "status": "",
-            "changes": 0,
-            "github_repo": "-"
-        }
+        return GitStatus(
+            valid=False,
+            error="Not a git repository",
+            branch="",
+            status="",
+            changes=0,
+            github_repo="-"
+        )
 
     # Gather git information
     try:
@@ -262,36 +296,37 @@ def get_git_status(repo_path: str, github_username: str = "") \
         # Get GitHub repo name
         github_repo = get_github_repo_name(repo_path, github_username)
 
-        return {
-            "valid": True,
-            "error": None,
-            "branch": branch,
-            "status": status_text,
-            "changes": changes,
-            "github_repo": github_repo
-        }
+        return GitStatus(
+            valid=True,
+            error=None,
+            branch=branch,
+            status=status_text,
+            changes=changes,
+            github_repo=github_repo
+        )
 
     except subprocess.TimeoutExpired:
-        return {
-            "valid": False,
-            "error": "Timeout",
-            "branch": "",
-            "status": "",
-            "changes": 0,
-            "github_repo": "-"
-        }
+        return GitStatus(
+            valid=False,
+            error="Timeout",
+            branch="",
+            status="",
+            changes=0,
+            github_repo="-"
+        )
+
     except Exception as e:
-        return {
-            "valid": False,
-            "error": str(e),
-            "branch": "",
-            "status": "",
-            "changes": 0,
-            "github_repo": "-"
-        }
+        return GitStatus(
+            valid=False,
+            error=str(e),
+            branch="",
+            status="",
+            changes=0,
+            github_repo="-"
+        )
 
 def format_repo_table_line(
-    repo: Dict[str, str], git_info: Dict[str, str | int | bool | None],
+    repo_name: str, repo_path: str, git_info: GitStatus,
     max_name: int = 20, max_branch: int = 10, max_status: int = 15,
     max_github: int = 20, max_path: int = 30
 ) -> str:
@@ -301,9 +336,11 @@ def format_repo_table_line(
 
     Parameters:
     -----------
-    repo : Dict[str, str]
-        Repository dictionary with keys: name, path.
-    git_info : Dict[str, str | int | bool | None]
+    repo_name : str
+        Name of the repository.
+    repo_path : str
+        Path to the repository.
+    git_info : GitStatus
         Git information dictionary with keys: valid, branch, status, changes,
         github_repo, error.
     max_name : int
@@ -323,26 +360,27 @@ def format_repo_table_line(
         Formatted table row as a string. Cells are separated by '│'.
     """
     # Show error line if repo is invalid
-    if not git_info["valid"]:
-        name = repo["name"][:max_name].ljust(max_name)
-        error = str(git_info["error"] or "")[:max_status].ljust(max_status)
-        path = repo["path"][:max_path].ljust(max_path)
+    if not git_info.valid:
+        name = repo_name[:max_name].ljust(max_name)
+        # error = str(git_info.error or "")[:max_status].ljust(max_status)
+        error = str(git_info.error)[:max_status].ljust(max_status)
+        path = repo_path[:max_path].ljust(max_path)
         return f"✗ {name} │ {'':10} │ {error} │ {'':20} │ {path}"
 
     # Format each column with truncation and padding
-    name = repo["name"][:max_name].ljust(max_name)
-    branch = str(git_info["branch"] or "")[:max_branch].ljust(max_branch)
-    status = str(git_info["status"] or "")[:max_status].ljust(max_status)
-    github = git_info["github_repo"][:max_github].ljust(max_github)
+    name = repo_name[:max_name].ljust(max_name)
+    branch = str(git_info.branch)[:max_branch].ljust(max_branch)
+    status = str(git_info.status)[:max_status].ljust(max_status)
+    github = git_info.github_repo[:max_github].ljust(max_github)
 
     # Truncate path intelligently (show end if too long)
-    path = repo["path"]
+    path = repo_path
     if len(path) > max_path-2:
         path = "..." + path[-(max_path-5):]
     path = path.ljust(max_path)
 
     # Status icon
-    icon = "✓" if git_info["changes"] == 0 else "≠"
+    icon = "✓" if git_info.changes == 0 else "≠"
 
     return f"{icon} {name} │ {branch} │ {status} │ {github} │ {path}"
 
@@ -517,20 +555,23 @@ def main():
         sys.exit(0)
 
     # Get git status for all repos
-    repos_with_status = []
+    repos_with_status: List[RepoWithStatus] = []
     for repo in repos:
         git_info = get_git_status(repo["path"], github_username)
-        repos_with_status.append({
-            "repo": repo,
-            "git_info": git_info
-        })
+        repos_with_status.append(
+            RepoWithStatus(
+                name=repo["name"],
+                path=repo["path"],
+                git_info=git_info
+            )
+        )
 
     # Sort by repository name (case-insensitive)
-    repos_with_status.sort(key=lambda r: r["repo"]["name"].lower())
+    repos_with_status.sort(key=lambda r: r.name.lower())
 
     # Separate valid and invalid repos
-    valid_repos = [r for r in repos_with_status if r["git_info"]["valid"]]
-    invalid_repos = [r for r in repos_with_status if not r["git_info"]["valid"]]
+    valid_repos = [r for r in repos_with_status if r.git_info.valid]
+    invalid_repos = [r for r in repos_with_status if not r.git_info.valid]
 
     # Show invalid repos in red panel if any exist
     if invalid_repos:
@@ -538,9 +579,9 @@ def main():
         console.print(Panel(
             "[bold red]⚠ Repositories not found or invalid:[/bold red]\n\n" +
             "\n".join([
-                f"  [red]✗[/red] [yellow]{repo['repo']['name']}[/yellow] - " +
+                f"  [red]✗[/red] [yellow]{repo.name}[/yellow] - " +
                         "[dim]{repo['git_info']['error']}[/dim]\n"
-                f"    [dim]Path: {repo['repo']['path']}[/dim]"
+                f"    [dim]Path: {repo.path}[/dim]"
                 for repo in invalid_repos
             ]),
             border_style="red", padding=(1, 2),
@@ -550,7 +591,7 @@ def main():
         console.print()
 
     # Only valid repos for selection
-    valid_repos = [r for r in repos_with_status if r["git_info"]["valid"]]
+    valid_repos = [r for r in repos_with_status if r.git_info.valid]
 
     if not valid_repos:
         console.print()
@@ -563,15 +604,15 @@ def main():
         sys.exit(1)
 
     # Calculate max widths for table columns
-    max_name = max(len(r["repo"]["name"])
+    max_name = max(len(r.name)
                    for r in valid_repos) if valid_repos else 20
     max_name = min(max(max_name, 15), 30)  # Between 15 and 30 chars
 
-    max_branch = max(len(r["git_info"]["branch"])
+    max_branch = max(len(r.git_info.branch)
                      for r in valid_repos) if valid_repos else 10
     max_branch = min(max(max_branch, 8), 15)  # Between 8 and 15 chars
 
-    max_github = max(len(r["git_info"]["github_repo"])
+    max_github = max(len(r.git_info.github_repo)
                      for r in valid_repos) if valid_repos else 20
     max_github = min(max(max_github, 15), 25)  # Between 15 and 25 chars
 
@@ -580,19 +621,19 @@ def main():
     console.print()
 
     # Select repository with fuzzy finder (table-like format)
-    choices = []
-    repo_map = {}
+    choices: List[Choice] = []
+    repo_map: Dict[str, str] = {}
 
     for r in valid_repos:
-        repo = r["repo"]
-        git_info = r["git_info"]
         choice_text = format_repo_table_line(
-            repo, git_info, max_name, max_branch, 15, max_github, 35
+            r.name, r.path, r.git_info, max_name, max_branch, 15, max_github, 35
         )
-        choices.append(Choice(value=repo, name=choice_text))
-        repo_map[choice_text] = repo
+        choices.append(
+            Choice(value={"name": r.name, "path": r.path}, name=choice_text)
+        )
+        repo_map[choice_text] = r.name
 
-    selected = inquirer.fuzzy(
+    selected = inquirer.fuzzy(  # type: ignore
         message="Select repository (type to filter):",
         choices=choices,
         default="",
@@ -612,7 +653,7 @@ def main():
         console.print()
         console.print(Panel(
             "[bold green]✓[/bold green] Opening " +
-                "[bold cyan]{selected['name']}[/bold cyan] in " +
+                f"[bold cyan]{selected['name']}[/bold cyan] in " +
                 f"[bold magenta]{git_program}[/bold magenta]",
             border_style="green",
             padding=(0, 2)
