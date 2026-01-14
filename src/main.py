@@ -264,6 +264,18 @@ def get_git_status(repo_path: str, github_username: str = "") -> GitStatus:
         else:
             branch = "unknown"
 
+        # Fetch latest from remote
+        try:
+            subprocess.run(
+                ["git", "-C", str(path), "fetch", "--quiet"],
+                capture_output=True,
+                timeout=10,
+                # check=False
+            )
+        except subprocess.TimeoutExpired:
+            # TODO: Handle fetch timeout if needed
+            pass
+
         # Get changes
         status_result = subprocess.run(
             ["git", "-C", str(path), "status", "--porcelain"],
