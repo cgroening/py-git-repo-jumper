@@ -205,7 +205,9 @@ def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
     except (subprocess.TimeoutExpired, Exception):
         return "-"
 
-def get_git_status(repo_path: str, github_username: str = "") -> GitStatus:
+def get_git_status(
+    repo_path: str, github_username: str = "", do_fetch: bool = False
+) -> GitStatus:
     """
     Determines the git status of a repository.
 
@@ -265,16 +267,17 @@ def get_git_status(repo_path: str, github_username: str = "") -> GitStatus:
             branch = "unknown"
 
         # Fetch latest from remote
-        try:
-            subprocess.run(
-                ["git", "-C", str(path), "fetch", "--quiet"],
-                capture_output=True,
-                timeout=10,
-                # check=False
-            )
-        except subprocess.TimeoutExpired:
-            # TODO: Handle fetch timeout if needed
-            pass
+        if do_fetch:
+            try:
+                subprocess.run(
+                    ["git", "-C", str(path), "fetch", "--quiet"],
+                    capture_output=True,
+                    timeout=10,
+                    # check=False
+                )
+            except subprocess.TimeoutExpired:
+                # TODO: Handle fetch timeout if needed
+                pass
 
         # Get changes
         status_result = subprocess.run(
@@ -521,6 +524,11 @@ def main():
         action="store_true",
         help="Remove last-repo.txt before starting (clean slate)",
     )
+    parser.add_argument(
+        "-f", "--fetch",
+        action="store_true",
+        help="Fetch from remote before checking status (slower)",
+    )
     args = parser.parse_args()
 
     console.clear()
@@ -569,7 +577,7 @@ def main():
     # Get git status for all repos
     repos_with_status: List[RepoWithStatus] = []
     for repo in repos:
-        git_info = get_git_status(repo["path"], github_username)
+        git_info = get_git_status(repo["path"], github_username, args.fetch)
         repos_with_status.append(
             RepoWithStatus(
                 name=repo["name"],
