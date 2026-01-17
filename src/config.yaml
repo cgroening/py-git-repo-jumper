@@ -11,3 +11,8 @@ repos:
   - name: Dotfiles
     path: /Users/yourusername/Dotfiles/
     fav:  false
+  - name: Project1
+    path: /Users/yourusername/Project1/
+  - name: Project2
+    path: /Users/yourusername/Project2/
+    fav:  true

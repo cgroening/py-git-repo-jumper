@@ -114,11 +114,16 @@ def load_config(config_path: str | None = None) \
                 github_username = data.get("github-username", "")
                 git_program = data.get("git-program", "lazygit")
 
-            # Use folder name as repo name if name is missing
+            # Loop repos
             for repo in repos:
+                # Use folder name as repo name if name is missing
                 if "name" not in repo or not repo["name"]:
                     path = Path(repo["path"]).expanduser()
                     repo["name"] = path.name
+
+                # Prepend * to name if fav is true
+                if repo.get("fav", False):
+                    repo["name"] = f"* {repo['name']}"
 
             # Filter out repos with show: false
             repos = [repo for repo in repos if repo.get("show", True)]
