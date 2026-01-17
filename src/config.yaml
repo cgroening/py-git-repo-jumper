@@ -10,3 +10,4 @@ github-username: yourusername
 repos:
   - name: Dotfiles
     path: /Users/yourusername/Dotfiles/
+    fav:  false
