@@ -591,8 +591,10 @@ def main():
             )
         )
 
-    # Sort by repository name (case-insensitive)
-    repos_with_status.sort(key=lambda r: r.name.lower())
+    # Sort by repository name (favorites first (with *), then alphabetically
+    repos_with_status.sort(
+        key=lambda r: (not r.name.startswith("* "), r.name.lstrip("* ").lower())
+    )
 
     # Separate valid and invalid repos
     valid_repos = [r for r in repos_with_status if r.git_info.valid]
