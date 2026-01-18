@@ -681,7 +681,18 @@ def main():
         console.print("\n[yellow]Cancelled.[/yellow]")
         return
 
-    if selected:
+    # Open selected repo in git program or save path only
+    if args.save_only:
+        # Save only mode
+        console.print()
+        console.print(Panel(
+            f"[bold yellow]💾[/bold yellow] Path saved: " +
+            f"[bold cyan]{selected['name']}[/bold cyan]",
+            border_style="yellow",
+            padding=(0, 2)
+        ))
+    else:
+        # Open in git program
         console.print()
         console.print(Panel(
             "[bold green]✓[/bold green] Opening " +
@@ -692,21 +703,14 @@ def main():
         ))
         open_in_git_program(selected["path"], git_program)
 
-        # Save path in last-repo.txt in same directory as config
-        # This can be used by a shell function to change the current directory
-        # of the terminal to the last opened repo after the git program exits
-        try:
-            with open(last_repo_file, "w") as f:
-                f.write(selected["path"])
-        except Exception as e:
-            console.print(f"[red]Error saving last-repo.txt: {e}[/red]")
-    else:
-        console.print()
-        console.print(Panel(
-            "[yellow]✗ Cancelled[/yellow]",
-            border_style="yellow",
-            padding=(0, 2)
-        ))
+    # Save path in last-repo.txt in same directory as config
+    # This can be used by a shell function to change the current directory
+    # of the terminal to the last opened repo after the git program exits
+    try:
+        with open(last_repo_file, "w") as f:
+            f.write(selected["path"])
+    except Exception as e:
+        console.print(f"[red]Error saving last-repo.txt: {e}[/red]")
 
 
 if __name__ == "__main__":
