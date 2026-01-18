@@ -534,6 +534,11 @@ def main():
         action="store_true",
         help="Fetch from remote before checking status (slower)",
     )
+    parser.add_argument(
+        "-s", "--save-only",
+        action="store_true",
+        help="Save path to last-repo.txt without opening git program",
+    )
     args = parser.parse_args()
 
     console.clear()
