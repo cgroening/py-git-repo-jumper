@@ -498,18 +498,14 @@ def cleanup_old_last_repo(config_dir: Path) -> None:
             # Silently ignore errors - this is just cleanup
             pass
 
-
-def main():
+def parse_command_line_args() -> argparse.Namespace:
     """
-    Main function.
+    Parses command line arguments.
 
-    This function orchestrates loading the config, displaying the repository
-    selection interface, and opening the selected repository in the specified
-    git program.
+    Returns:
+    --------
+    argparse.Namespace
     """
-    # TODO: Clean up this function and break into smaller functions
-
-    # Parse command line arguments
     parser = argparse.ArgumentParser(
         description="Select and open a git repository in a git tool"
     )
@@ -539,8 +535,20 @@ def main():
         action="store_true",
         help="Save path to last-repo.txt without opening git program",
     )
-    args = parser.parse_args()
 
+    return parser.parse_args()
+
+
+def main():
+    """
+    Main function.
+
+    This function orchestrates loading the config, displaying the repository
+    selection interface, and opening the selected repository in the specified
+    git program.
+    """
+    # Parse command line arguments and clear output
+    args = parse_command_line_args()
     console.clear()
 
     # Load configuration (will use script directory if no config specified)
@@ -550,7 +558,7 @@ def main():
         sys.exit(1)
     repos, github_username, cfg_program, config_path = config_result
 
-    # CLI argument takes precedence over config file
+    # Set name of git program to use; prefer cli arg over config
     git_program = args.program if args.program else cfg_program
 
     # Determine directory for last-repo.txt (same as config file)
@@ -686,7 +694,7 @@ def main():
         # Save only mode
         console.print()
         console.print(Panel(
-            f"[bold yellow]💾[/bold yellow] Path saved: " +
+            "[bold yellow]💾[/bold yellow] Path saved: " +
             f"[bold cyan]{selected['name']}[/bold cyan]",
             border_style="yellow",
             padding=(0, 2)
