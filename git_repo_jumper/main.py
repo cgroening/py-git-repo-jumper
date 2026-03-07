@@ -13,12 +13,6 @@ _storage = YamlConfigStorage()
 _service = GitRepoService(_storage)
 
 
-class AppState:
-    config: Path | None = None
-
-state = AppState()
-
-
 @app.callback()
 def default(
     ctx: typer.Context,
@@ -32,11 +26,12 @@ def default(
         resolve_path=True,
     ),
 ):
-    state.config = config
+    if config:
+        _storage.set_config_path(config)
 
     if ctx.invoked_subcommand is None:
         typer.echo('No command provided. Runnig command "list" by default.')
-        ListCommand(_service).run(config_path=state.config)
+        ListCommand(_service).run()
 
 
 @app.command()
@@ -46,7 +41,7 @@ def test():
 
 @app.command(name='list')
 def list_repos():
-    ListCommand(_service).run(config_path=state.config)
+    ListCommand(_service).run()
 
 
 def main():
