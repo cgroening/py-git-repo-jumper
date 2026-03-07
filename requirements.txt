@@ -1,3 +1,0 @@
-InquirerPy>=0.3.4
-PyYAML>=6.0.0
-rich>=13.0.0
