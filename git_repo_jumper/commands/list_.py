@@ -20,7 +20,7 @@ class ListCommand:
 
     def run(self, config_path: Path | None = None) -> None:
         try:
-            config = self._service.list_repos(config_path)
+            config = self._service.fetch_repos(config_path)
         except (ConfigNotFoundError, ConfigParseError) as e:
             print_error(str(e))
             return
