@@ -1,2 +1,21 @@
+[project]
+name = "git-repository-jumper"
+version = "0.1.0"
+
+[tool.pyright]
+exclude = [
+    "**/__pycache__",
+    "**/*.pyc",
+    ".venv",
+    "venv",
+    "**/node_modules",
+]
+
+[project.scripts]
+taskcli = "gjump.main:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.mypy]
 check_untyped_defs = true
