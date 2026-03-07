@@ -1,5 +1,5 @@
 [project]
-name = "git-repository-jumper"
+name = "git-repo-jumper"
 version = "0.1.0"
 
 [tool.pyright]
