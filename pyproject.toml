@@ -1,6 +1,16 @@
 [project]
 name = "git-repo-jumper"
 version = "0.1.0"
+dependencies = [
+    "InquirerPy>=0.3.4",
+    "PyYAML>=6.0.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+]
 
 [tool.pyright]
 exclude = [
