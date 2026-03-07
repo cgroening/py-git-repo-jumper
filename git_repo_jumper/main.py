@@ -19,7 +19,7 @@ def default(
     config: Path | None = typer.Option(
         None,
         '-c', '--config',
-        help='Path to the config file. If not provied, the default is used.',
+        help='Path to the config file. If not provided, the default is used.',
         exists=True,
         file_okay=True,
         dir_okay=False,
@@ -31,7 +31,7 @@ def default(
 
     if ctx.invoked_subcommand is None:
         typer.echo('No command provided. Runnig command "list" by default.')
-        ListCommand(_service).run()
+        ListCommand(_service).run(cd_only=False)
 
 
 @app.command()
@@ -40,8 +40,14 @@ def test():
 
 
 @app.command(name='list')
-def list_repos():
-    ListCommand(_service).run()
+def list_repos(
+    cd_only: bool = typer.Option(
+        False,
+        '-s', '--save-only',
+        help='Save path of selected repo to last-repo.txt without opening git program.',
+    )
+):
+    ListCommand(_service).run(cd_only=cd_only)
 
 
 def main():
