@@ -19,6 +19,7 @@ class ListCommand:
     _service: GitRepoService
     _cd_only: bool
     _config: Config
+    _repos: list[Repo]
 
     def __init__(self, service: GitRepoService):
         self._service = service
@@ -42,18 +43,17 @@ class ListCommand:
         Displays the repositories from the config file in a fuzzy finder and
         allows the user to select one.
         """
-        # repos = self._config.repos
-        repos = self._service.get_visible_repos_with_git_status(
+        self._repos = self._service.get_visible_repos_with_git_status(
             do_fetch=False
         )
-        if not repos:
+        if not self._repos:
             print_error('No repositories found in config.')
             return
 
         # Format the repositories into choices for the fuzzy finder
         choices: list[Choice] = []
 
-        for i, repo in enumerate(repos):
+        for i, repo in enumerate(self._repos):
             choice_value = self.format_fuzzy_finder_choice(repo)
             choices.append(Choice(value=i, name=choice_value))
 
@@ -65,11 +65,13 @@ class ListCommand:
         """
         Formats a repository into a string for display in the fuzzy finder,
         using fixed-width columns for name, branch, status and GitHub repo name.
+        Favorites are prefixed with a star.
         """
         col_widths = self._config.repo_selector_column_widths
         git_info = repo.git_info or GitInfo()
         str_fix = self.str_with_fixed_width
 
+        star = '★ ' if repo.fav else '  '
         name = str_fix(repo.name, col_widths.name)
         branch = str_fix(git_info.branch or '-', col_widths.branch)
         status = str_fix(git_info.status or '-', col_widths.status)
@@ -77,7 +79,7 @@ class ListCommand:
             git_info.github_repo_name or '-', col_widths.github_repo_name
         )
 
-        return f'{name} │ {branch} │ {status} │ {github_repo_name}'
+        return f'{star}{name} │ {branch} │ {status} │ {github_repo_name}'
 
     @staticmethod
     def str_with_fixed_width(text: str, width: int, align: str = 'left') -> str:
@@ -123,7 +125,7 @@ class ListCommand:
         Handles the selected repository by storing its path, printing its
         details and optionally opening the git tool.
         """
-        repos = self._config.repos
+        repos = self._repos
 
         if not repos:
             return

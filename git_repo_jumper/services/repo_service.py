@@ -24,14 +24,19 @@ class GitRepoService:
     def get_visible_repos(self) -> list[Repo]:
         """
         Returns a list of repositories from the config file that are not
-        marked as hidden (i.e. don't have `show: false`).
+        marked as hidden (i.e. don't have `show: false`), sorted with
+        favorites first and then alphabetically by name.
         """
         visible_repos: list[Repo] = []
 
+        # Filter out hidden repositories
         for repo in self.get_config().repos or []:
             if not repo.show:
                 continue
             visible_repos.append(repo)
+
+        # Sort favorites first, then alphabetically by name (case-insensitive)
+        visible_repos.sort(key=lambda r: (not r.fav, r.name.lower()))
 
         return visible_repos
 
