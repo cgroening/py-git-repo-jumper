@@ -137,11 +137,11 @@ class GitRepoService:
 
             status_parts = []
             if changes > 0:
-                status_parts.append(f'≠ {changes}')
+                status_parts.append(f'≠{changes}')
             if behind > 0:
-                status_parts.append(f'↓ {behind}')
+                status_parts.append(f'↓{behind}')
             if ahead > 0:
-                status_parts.append(f'↑ {ahead}')
+                status_parts.append(f'↑{ahead}')
 
             status_text = ' '.join(status_parts) if status_parts else '✓'
 
