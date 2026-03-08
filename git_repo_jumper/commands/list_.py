@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
-from git_repo_jumper.output import print_error, print_warning
+from git_repo_jumper.output import print_custom_panel, print_error, print_warning
 from git_repo_jumper.domain.models import Config, Repo, GitInfo
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError
@@ -41,25 +41,52 @@ class ListCommand:
     def show_repo_selector(self) -> None:
         """
         Displays the repositories from the config file in a fuzzy finder and
-        allows the user to select one.
+        allows the user to select one. Repos with non-existing paths are
+        excluded and shown as a warning beforehand.
         """
-        self._visible_repos = self._service.get_visible_repos_with_git_status(
+        all_repos = self._service.get_visible_repos_with_git_status(
             do_fetch=False
         )
-        if not self._visible_repos:
+        if not all_repos:
             print_error('No repositories found in config.')
             return
 
-        # Format the repositories into choices for the fuzzy finder
-        choices: list[Choice] = []
+        # Separate repos with missing paths from valid ones
+        repos_with_invalid_path: list[Repo] = []
+        self._visible_repos = []
+        for repo in all_repos:
+            if repo.git_info and repo.git_info.error == 'Path does not exist':
+                repos_with_invalid_path.append(repo)
+            else:
+                self._visible_repos.append(repo)
 
-        for i, repo in enumerate(self._visible_repos):
-            choice_value = self.format_fuzzy_finder_choice(repo)
-            choices.append(Choice(value=i, name=choice_value))
+        if repos_with_invalid_path:
+            self._print_missing_paths_warning(repos_with_invalid_path)
+
+        if not self._visible_repos:
+            print_error('No repositories with valid paths found.')
+            return
+
+        # Format the repositories into choices for the fuzzy finder
+        choices: list[Choice] = [
+            Choice(value=i, name=self.format_fuzzy_finder_choice(repo))
+            for i, repo in enumerate(self._visible_repos)
+        ]
 
         # Show the fuzzy finder and get the selected repository index
         selected = self.create_fuzzy_finder(choices)
         self.handle_selected_repo(selected)
+
+    @staticmethod
+    def _print_missing_paths_warning(repos: list[Repo]) -> None:
+        """Prints a warning panel listing all repos with non-existing paths."""
+        lines = [
+            '[yellow bold]⚠ Path not found for the following ' \
+                +'repositories:[/yellow bold]'
+        ]
+        for repo in repos:
+            lines.append(f'  • {repo.name}  [dim]{repo.path}[/dim]')
+        print_custom_panel('\n'.join(lines), 'yellow')
 
     def format_fuzzy_finder_choice(self, repo: Repo) -> str:
         """
@@ -110,6 +137,7 @@ class ListCommand:
         print()  # Empty line for better spacing before the prompt
         return inquirer.fuzzy(  # type: ignore
             message='Select repository (type to filter):',
+            instruction='\n(Name | Branch | Status | GitHub | Path)',
             choices=choices,
             default='',
             max_height='90%',
