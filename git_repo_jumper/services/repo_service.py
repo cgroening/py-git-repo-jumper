@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 from git_repo_jumper.domain.errors import SelectedRepoPathSaveError
 from git_repo_jumper.domain.models import Config, GitInfo, Repo
@@ -250,7 +251,6 @@ class GitRepoService:
         except (subprocess.TimeoutExpired, Exception):
             return "-"
 
-
     def store_selected_repo_path(self, repo_path: str) -> None:
         """
         Stores the path of the selected repository in a file named
@@ -267,3 +267,47 @@ class GitRepoService:
                 f.write(repo_path)
         except Exception as e:
             raise SelectedRepoPathSaveError(str(selected_repo_path_file), str(e))
+
+    @staticmethod
+    def open_git_tool(repo_path: str, git_program: str) -> None:
+        """
+        Opens the repository in the specified git program.
+
+        Parameters:
+        -----------
+        repo_path : str
+            Path to the repository.
+        git_program : str
+            Git program to use (e.g., lazygit, gitui, tig).
+        """
+        path = Path(repo_path).expanduser()
+
+        # Program-specific commands
+        commands = {
+            'lazygit': ['lazygit', '-p', str(path)],
+            'gitui': ['gitui', '-d', str(path)],
+            'tig': ['tig', '-C', str(path)],
+            'gh': ['gh', 'repo', 'view', '--web']
+        }
+
+        # Use custom command if provided, otherwise use known commands
+        if git_program in commands:
+            cmd = commands[git_program]
+        else:
+            # For unknown programs, assume they accept -p flag
+            cmd = [git_program, '-p', str(path)]
+
+        try:
+            # Special handling for gh (needs to run from within the repo)
+            if git_program == 'gh':
+                subprocess.run(cmd, cwd=str(path), check=True)
+            else:
+                subprocess.run(cmd, check=True)
+        except FileNotFoundError:
+            # TODO: Handle this in list_.py
+            console.print(f'[red]Error: {git_program} is not installed![/red]')
+            sys.exit(1)
+        except subprocess.CalledProcessError as e:
+            # TODO: Handle this in list_.py
+            console.print(f'[red]Error opening {git_program}: {e}[/red]')
+            sys.exit(1)

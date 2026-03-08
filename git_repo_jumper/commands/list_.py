@@ -158,6 +158,7 @@ class ListCommand:
             marker_pl=' ',
         ).execute()
 
+    # TODO: Refactor this method to separate concerns (e.g. storing path, printing details, opening tool)
     def handle_selected_repo(self, selected_id: int) -> None:
         """
         Handles the selected repository by storing its path, printing its
@@ -194,6 +195,13 @@ class ListCommand:
 
         # Print the selected repo details and the git tool that will be opened
         self.print_selected_repo(repos[selected_id], git_tool_name)
+
+        # Open the git tool if not in cd-only mode and a tool is configured
+        if not self._cd_only and git_tool_name:
+            try:
+                self._service.open_git_tool(repos[selected_id].path, git_tool_name)
+            except Exception as e:
+                print_error(f'Error opening git tool: {str(e)}')
 
     @staticmethod
     def print_selected_repo(
