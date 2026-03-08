@@ -19,7 +19,7 @@ class ListCommand:
     _service: GitRepoService
     _cd_only: bool
     _config: Config
-    _repos: list[Repo]
+    _visible_repos: list[Repo]
 
     def __init__(self, service: GitRepoService):
         self._service = service
@@ -43,17 +43,17 @@ class ListCommand:
         Displays the repositories from the config file in a fuzzy finder and
         allows the user to select one.
         """
-        self._repos = self._service.get_visible_repos_with_git_status(
+        self._visible_repos = self._service.get_visible_repos_with_git_status(
             do_fetch=False
         )
-        if not self._repos:
+        if not self._visible_repos:
             print_error('No repositories found in config.')
             return
 
         # Format the repositories into choices for the fuzzy finder
         choices: list[Choice] = []
 
-        for i, repo in enumerate(self._repos):
+        for i, repo in enumerate(self._visible_repos):
             choice_value = self.format_fuzzy_finder_choice(repo)
             choices.append(Choice(value=i, name=choice_value))
 
@@ -125,7 +125,7 @@ class ListCommand:
         Handles the selected repository by storing its path, printing its
         details and optionally opening the git tool.
         """
-        repos = self._repos
+        repos = self._visible_repos
 
         if not repos:
             return
