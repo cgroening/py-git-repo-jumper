@@ -3,6 +3,7 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
+from InquirerPy import get_style
 from InquirerPy.base.control import Choice
 from git_repo_jumper.output import print_custom_panel, print_error, print_warning
 from git_repo_jumper.domain.models import Config, Repo, GitInfo
@@ -38,7 +39,27 @@ class ListCommand:
             print_error(f'Unexpected error while reading config: {str(e)}')
             return
 
+        self.show_application_header()
         self.show_repo_selector()
+
+    def show_application_header(self) -> None:
+        """
+        Displays the application header with name and short usage instructions.
+        """
+        application_name = '🐙🚀 [bold cyan]Git Repository Jumper[/bold cyan]'
+        instructions = 'Select a repository to [green]cd into it[/green]'
+        if self._cd_only:
+            instructions += '.'
+        else:
+            gittool = self._config.git_tool_name
+            if gittool:
+                instructions += f' and open it in [magenta]{gittool}[/magenta].'
+        instructions += (
+            '\n\n[yellow]Use arrow keys to navigate, type to filter and '
+            'press Enter to select.[/yellow]'
+        )
+
+        print_custom_panel(f'{application_name}\n\n{instructions}', 'cyan')
 
     def show_repo_selector(self) -> None:
         """
@@ -148,8 +169,7 @@ class ListCommand:
 
         print()  # Empty line for better spacing before the prompt
         return inquirer.fuzzy(  # type: ignore
-            message='Select repository (type to filter):',
-            instruction=f'\n{header_line}',
+            message=header_line,
             choices=choices,
             default='',
             max_height='90%',
@@ -158,6 +178,10 @@ class ListCommand:
             match_exact=False,
             marker='❯',
             marker_pl=' ',
+            qmark='',
+            style=get_style({
+                'question': 'bold', 'pointer': 'fg:#f4f4f4 bg:#522a37'
+            }, style_override=False)
         ).execute()
 
     # TODO: Refactor this method to separate concerns (e.g. storing path, printing details, opening tool)

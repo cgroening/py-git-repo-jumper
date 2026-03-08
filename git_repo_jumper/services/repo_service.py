@@ -79,7 +79,6 @@ class GitRepoService:
             - github_repo (str): GitHub repository name or '-'.
         """
 
-        # Get path object and check if it exists and is a git repo
         path = Path(repo_path).expanduser()
 
         if not path.exists():
@@ -102,62 +101,50 @@ class GitRepoService:
                 github_repo_name='-'
             )
 
-        # Gather git information
         try:
-            # Current branch
             branch_result = subprocess.run(
                 ['git', '-C', str(path), 'rev-parse', '--abbrev-ref', 'HEAD'],
                 capture_output=True, text=True, timeout=5
             )
+            branch = branch_result.stdout.strip() if branch_result.returncode == 0 else 'unknown'
 
-            if branch_result.returncode == 0:
-                branch = branch_result.stdout.strip()
-            else:
-                branch = 'unknown'
-
-            # Fetch latest from remote
             if do_fetch:
                 try:
                     subprocess.run(
                         ['git', '-C', str(path), 'fetch', '--quiet'],
                         capture_output=True,
                         timeout=10,
-                        # check=False
                     )
                 except subprocess.TimeoutExpired:
-                    # TODO: Handle fetch timeout if needed
                     pass
 
-            # Get changes
             status_result = subprocess.run(
                 ['git', '-C', str(path), 'status', '--porcelain'],
                 capture_output=True, text=True, timeout=5
             )
+            changes = len(status_result.stdout.strip().split('\n')) if status_result.stdout.strip() else 0
 
-            if status_result.stdout.strip():
-                changes = len(status_result.stdout.strip().split('\n'))
-            else:
-                changes = 0
-
-            # Check upstream status
             upstream_result = subprocess.run(
                 ['git', '-C', str(path), 'rev-list', '--count', '--left-right',
                  '@{upstream}...HEAD'],
                 capture_output=True, text=True, timeout=5
             )
 
-            status_text = '✓ Clean'
-            if changes > 0:
-                status_text = f'≠ {changes} change{'s' if changes != 1 else ''}'
-
+            behind, ahead = 0, 0
             if upstream_result.returncode == 0:
-                behind, ahead = upstream_result.stdout.strip().split()
-                if int(behind) > 0:
-                    status_text += f' ↓{behind}'
-                if int(ahead) > 0:
-                    status_text += f' ↑{ahead}'
+                parts = upstream_result.stdout.strip().split()
+                behind, ahead = int(parts[0]), int(parts[1])
 
-            # Get GitHub repo name
+            status_parts = []
+            if changes > 0:
+                status_parts.append(f'≠ {changes}')
+            if behind > 0:
+                status_parts.append(f'↓ {behind}')
+            if ahead > 0:
+                status_parts.append(f'↑ {ahead}')
+
+            status_text = ' '.join(status_parts) if status_parts else '✓'
+
             github_repo = GitRepoService.get_github_repo_name(repo_path, github_username)
 
             return GitInfo(
