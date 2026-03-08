@@ -3,7 +3,7 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
-from InquirerPy import get_style
+from InquirerPy import get_style  # type: ignore
 from InquirerPy.base.control import Choice
 from git_repo_jumper.output import print_custom_panel, print_error, print_warning
 from git_repo_jumper.domain.models import Config, Repo, GitInfo
