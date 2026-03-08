@@ -18,14 +18,16 @@ console = Console()
 class ListCommand:
     _service: GitRepoService
     _cd_only: bool
+    _do_fetch: bool
     _config: Config
     _visible_repos: list[Repo]
 
     def __init__(self, service: GitRepoService):
         self._service = service
 
-    def run(self, cd_only: bool = False) -> None:
+    def run(self, cd_only: bool = False, do_fetch: bool = False) -> None:
         self._cd_only = cd_only
+        self._do_fetch = do_fetch
 
         try:
             self._config = self._service.get_config()
@@ -45,7 +47,7 @@ class ListCommand:
         excluded and shown as a warning beforehand.
         """
         all_repos = self._service.get_visible_repos_with_git_status(
-            do_fetch=False
+            do_fetch=self._do_fetch
         )
         if not all_repos:
             print_error('No repositories found in config.')

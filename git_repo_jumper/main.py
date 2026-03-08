@@ -43,10 +43,21 @@ def list_repos(
         '-s', '--save-only',
         help=(
             'Save path of selected repo to selected-repo.txt (in parent folder '
-            'of config file) without opening the configured git tool.'),
+            'of config file) without opening the configured git tool.'
+        ),
+    ),
+    do_fetch: bool = typer.Option(
+        False,
+        '-f', '--fetch',
+        help=(
+            'Fetch the latest git status for each remote repository before '
+            'showing the selector. Use this only when necessary, because this '
+            'may take some time; especially if you have many repositories or a '
+            'slow network connection.'
+        ),
     )
 ):
-    ListCommand(_service).run(cd_only=cd_only)
+    ListCommand(_service).run(cd_only=cd_only, do_fetch=do_fetch)
 
 
 # TODO: Implement this (open the recentl selected repo again)
