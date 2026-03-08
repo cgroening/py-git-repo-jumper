@@ -1,29 +1,30 @@
 import pprint
 from rich.console import Console
+from rich.table import Table
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
-from git_repo_jumper.output import print_error
+from git_repo_jumper.output import print_error, print_warning, print_success, print_info, print_custom_panel
 from git_repo_jumper.domain.models import Repo
 from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
 from git_repo_jumper.services.repo_service import GitRepoService
 
 
 console = Console()
-print = console.print
 
 
 class ListCommand:
     _service: GitRepoService
     _cd_only: bool
+    _repos: list[Repo] | None
 
     def __init__(self, service: GitRepoService):
         self._service = service
 
-    def run(self, cd_only: bool) -> None:
+    def run(self, cd_only: bool = False) -> None:
         self._cd_only = cd_only
 
         try:
-            repos: list[Repo] | None = self._service.fetch_repos()
+            self._repos = self._service.fetch_repos()
         except (ConfigNotFoundError, ConfigParseError) as e:
             print_error(str(e))
             return
@@ -31,24 +32,18 @@ class ListCommand:
             print_error(f'Unexpected error: {str(e)}')
             return
 
-        self.print_repos(repos)
+        self.print_repos()
 
-    @staticmethod
-    def print_repos(repos: list[Repo] | None) -> None:
-        if not repos:
+    def print_repos(self) -> None:
+        if not self._repos:
             print_error('No repositories found in config.')
             return
 
         # Select repository with fuzzy finder (table-like format)
         choices: list[Choice] = []
-        repo_map: dict[str, str] = {}
 
-        for r in repos:
-            choice_text = r.name
-            choices.append(
-                Choice(value={'name': r.name, 'path': r.path}, name=choice_text)
-            )
-            repo_map[choice_text] = r.name
+        for i, repo in enumerate(self._repos):
+            choices.append(Choice(value=i, name=repo.name))
 
         selected = inquirer.fuzzy(  # type: ignore
             message='Select repository (type to filter):',
@@ -62,10 +57,33 @@ class ListCommand:
             marker_pl=' ',
         ).execute()
 
-        if not selected:
-            console.print("\n[yellow]Cancelled.[/yellow]")
+        if not isinstance(selected, int):
+            print_warning('Selection cancelled.')
             return
 
-        print(selected)
+        self._service.store_selected_repo_path(self._repos[selected].path)
+
+        if self._cd_only:
+            self.print_selected_repo(self._repos[selected])
+        else:
+            self.print_selected_repo(self._repos[selected], 'lazygit')
+
+    @staticmethod
+    def print_selected_repo(
+        repo: Repo, git_program_name: str | None = None
+    ) -> None:
+        table = Table(title='[cyan]ℹ Selected Repository[/cyan]',
+                      show_header=False, show_lines=True)
+        table.add_column(style='bold', overflow='fold')
+        table.add_column(overflow='fold')
+        table.add_row('Name:', f'[yellow]{repo.name}[/yellow]')
+        table.add_row('Path:', f'[magenta]{repo.path}[/magenta]')
+
+        if git_program_name:
+            table.add_row(
+                'Opening in:', f'[green]{git_program_name}[/green]'
+            )
+
+        console.print(table)
 
 

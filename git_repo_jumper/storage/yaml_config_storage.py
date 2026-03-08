@@ -32,13 +32,13 @@ class YamlConfigStorage(ConfigStorage):
     _config_path: str
         The path to the YAML config file.
     """
-    _config_path: str
+    _config_path: Path
 
 
-    def __init__(self, config_path: str | None = None):
+    def __init__(self, config_path: Path | None = None):
         """Sets the config path to default value if not provided."""
         if config_path is None:
-            config_path = str(DEFAULT_CONFIG_PATH)
+            config_path = DEFAULT_CONFIG_PATH
         self._config_path = config_path
 
     def load_config(self) -> Config:
@@ -63,7 +63,7 @@ class YamlConfigStorage(ConfigStorage):
 
         return Config(
             config_path=self._config_path,
-            git_program_name=git_program_name,
+            git_tool_name=git_program_name,
             github_username=github_username,
             repos=repos
         )

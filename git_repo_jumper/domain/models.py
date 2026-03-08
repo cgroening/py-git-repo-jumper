@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(slots=True, frozen=True)
@@ -28,8 +29,8 @@ class Config:
     """
     Configuration data for git-repo-jumper.
     """
-    config_path: str | None
-    git_program_name: str | None
+    config_path: Path | None
+    git_tool_name: str | None
     github_username: str | None
     repos: list[Repo] | None
 
