@@ -1,11 +1,13 @@
-# 📦 Git Repository Selector
+# 📦 Git Repo Jumper
 
 A fast and elegant terminal-based Git repository selector with fuzzy finding. Quickly navigate between your repositories and open them in your favorite Git TUI tool.
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-![alt text](screenshots/screenshot.png)
+![Logo](logo_dark_1.png)
+
+![Screenshot](screenshots/screenshot.png)
 
 ## ✨ Features
 
