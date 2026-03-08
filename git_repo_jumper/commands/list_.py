@@ -1,10 +1,11 @@
 # import pprint
+from typing import Any
 from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 from git_repo_jumper.output import print_error, print_warning
-from git_repo_jumper.domain.models import Config, Repo
+from git_repo_jumper.domain.models import Config, Repo, GitInfo
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError
 )
@@ -34,25 +35,78 @@ class ListCommand:
             print_error(f'Unexpected error while reading config: {str(e)}')
             return
 
-        self.print_repos()
+        self.show_repo_selector()
 
-    def print_repos(self) -> None:
+    def show_repo_selector(self) -> None:
         """
         Displays the repositories from the config file in a fuzzy finder and
         allows the user to select one.
         """
-        repos = self._config.repos
+        # repos = self._config.repos
+        repos = self._service.get_visible_repos_with_git_status(
+            do_fetch=False
+        )
         if not repos:
             print_error('No repositories found in config.')
             return
 
-        # Select repository with fuzzy finder (table-like format)
+        # Format the repositories into choices for the fuzzy finder
         choices: list[Choice] = []
 
         for i, repo in enumerate(repos):
-            choices.append(Choice(value=i, name=repo.name))
+            choice_value = self.format_fuzzy_finder_choice(repo)
+            choices.append(Choice(value=i, name=choice_value))
 
-        selected = inquirer.fuzzy(  # type: ignore
+        # Show the fuzzy finder and get the selected repository index
+        selected = self.create_fuzzy_finder(choices)
+        self.handle_selected_repo(selected)
+
+    def format_fuzzy_finder_choice(self, repo: Repo) -> str:
+        """
+        Formats a repository into a string for display in the fuzzy finder,
+        using fixed-width columns for name, branch, status and GitHub repo name.
+        """
+        col_widths = self._config.repo_selector_column_widths
+        git_info = repo.git_info or GitInfo()
+        str_fix = self.str_with_fixed_width
+
+        name = str_fix(repo.name, col_widths.name)
+        branch = str_fix(git_info.branch or '-', col_widths.branch)
+        status = str_fix(git_info.status or '-', col_widths.status)
+        github_repo_name = str_fix(
+            git_info.github_repo_name or '-', col_widths.github_repo_name
+        )
+
+        return f'{name} │ {branch} │ {status} │ {github_repo_name}'
+
+    @staticmethod
+    def str_with_fixed_width(text: str, width: int, align: str = 'left') -> str:
+        """
+        Returns a string truncated or padded to fit the specified width.
+        Alignment can be 'start', 'end', or 'center'.
+        """
+        if len(text) > width:
+            if align == 'right':
+                return '…' + text[-(width - 1):]  # Truncate from left
+            return text[:width - 1] + '…'         # Truncate from right
+
+        if align == 'left':
+            return text.ljust(width)
+        elif align == 'right':
+            return text.rjust(width)
+        elif align == 'center':
+            return text.center(width)
+        else:
+            raise ValueError(f'Invalid alignment: {align}')
+
+    @staticmethod
+    def create_fuzzy_finder(choices: list[Choice]) -> Any:
+        """
+        Creates and returns an InquirerPy fuzzy finder prompt with the given
+        choices.
+        """
+        print()  # Empty line for better spacing before the prompt
+        return inquirer.fuzzy(  # type: ignore
             message='Select repository (type to filter):',
             choices=choices,
             default='',
@@ -63,8 +117,6 @@ class ListCommand:
             marker='❯',
             marker_pl=' ',
         ).execute()
-
-        self.handle_selected_repo(selected)
 
     def handle_selected_repo(self, selected_id: int) -> None:
         """
@@ -87,7 +139,9 @@ class ListCommand:
             print_error(str(e))
             return
         except Exception as e:
-            print_error(f'Unexpected error while storing selected path: {str(e)}')
+            print_error(
+                f'Unexpected error while storing selected path: {str(e)}'
+            )
             return
 
         # Get the name of the git tool to open, if not in cd-only mode

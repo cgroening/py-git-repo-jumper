@@ -1,5 +1,7 @@
+import subprocess
+from pathlib import Path
 from git_repo_jumper.domain.errors import SelectedRepoPathSaveError
-from git_repo_jumper.domain.models import Config
+from git_repo_jumper.domain.models import Config, GitInfo, Repo
 from git_repo_jumper.storage.config_storage import ConfigStorage
 
 
@@ -19,6 +21,231 @@ class GitRepoService:
         self._config = self._storage.load_config()
         return self._config
 
+    def get_visible_repos(self) -> list[Repo]:
+        """
+        Returns a list of repositories from the config file that are not
+        marked as hidden (i.e. don't have `show: false`).
+        """
+        visible_repos: list[Repo] = []
+
+        for repo in self.get_config().repos or []:
+            if not repo.show:
+                continue
+            visible_repos.append(repo)
+
+        return visible_repos
+
+    def get_visible_repos_with_git_status(
+            self, do_fetch: bool = False
+    ) -> list[Repo]:
+        repos = self.get_visible_repos()
+        for repo in repos:
+            repo.git_info = self.get_git_status(
+                repo.path, self.get_config().github_username, do_fetch
+            )
+
+        return repos
+
+    # TODO: Clean-up this method and split into smaller methods
+    @staticmethod
+    def get_git_status(
+        repo_path: str, github_username: str | None, do_fetch: bool = False
+    ) -> GitInfo:
+        """
+        Determines the git status of a repository.
+
+        Parameters:
+        -----------
+        repo_path : str
+            Path to the repository.
+        github_username : str
+            GitHub username to use when extracting repo name.
+
+        Returns:
+        --------
+        GitStatus
+            A GitStatus object containing:
+            - valid (bool): Whether the path is a valid git repository.
+            - error (str | None): Error message if invalid, else None.
+            - branch (str): Current branch name.
+            - status (str): Status summary (clean, changes, ahead/behind).
+            - changes (int): Number of uncommitted changes.
+            - github_repo (str): GitHub repository name or '-'.
+        """
+
+        # Get path object and check if it exists and is a git repo
+        path = Path(repo_path).expanduser()
+
+        if not path.exists():
+            return GitInfo(
+                valid=False,
+                error='Path does not exist',
+                branch='',
+                status='',
+                changes=0,
+                github_repo_name='-'
+            )
+
+        if not (path / '.git').exists():
+            return GitInfo(
+                valid=False,
+                error='Not a git repository',
+                branch='',
+                status='',
+                changes=0,
+                github_repo_name='-'
+            )
+
+        # Gather git information
+        try:
+            # Current branch
+            branch_result = subprocess.run(
+                ['git', '-C', str(path), 'rev-parse', '--abbrev-ref', 'HEAD'],
+                capture_output=True, text=True, timeout=5
+            )
+
+            if branch_result.returncode == 0:
+                branch = branch_result.stdout.strip()
+            else:
+                branch = 'unknown'
+
+            # Fetch latest from remote
+            if do_fetch:
+                try:
+                    subprocess.run(
+                        ['git', '-C', str(path), 'fetch', '--quiet'],
+                        capture_output=True,
+                        timeout=10,
+                        # check=False
+                    )
+                except subprocess.TimeoutExpired:
+                    # TODO: Handle fetch timeout if needed
+                    pass
+
+            # Get changes
+            status_result = subprocess.run(
+                ['git', '-C', str(path), 'status', '--porcelain'],
+                capture_output=True, text=True, timeout=5
+            )
+
+            if status_result.stdout.strip():
+                changes = len(status_result.stdout.strip().split('\n'))
+            else:
+                changes = 0
+
+            # Check upstream status
+            upstream_result = subprocess.run(
+                ['git', '-C', str(path), 'rev-list', '--count', '--left-right',
+                 '@{upstream}...HEAD'],
+                capture_output=True, text=True, timeout=5
+            )
+
+            status_text = '✓ Clean'
+            if changes > 0:
+                status_text = f'≠ {changes} change{'s' if changes != 1 else ''}'
+
+            if upstream_result.returncode == 0:
+                behind, ahead = upstream_result.stdout.strip().split()
+                if int(behind) > 0:
+                    status_text += f' ↓{behind}'
+                if int(ahead) > 0:
+                    status_text += f' ↑{ahead}'
+
+            # Get GitHub repo name
+            github_repo = GitRepoService.get_github_repo_name(repo_path, github_username)
+
+            return GitInfo(
+                valid=True,
+                error=None,
+                branch=branch,
+                status=status_text,
+                changes=changes,
+                github_repo_name=github_repo
+            )
+
+        except subprocess.TimeoutExpired:
+            return GitInfo(
+                valid=False,
+                error='Timeout',
+                branch='',
+                status='',
+                changes=0,
+                github_repo_name='-'
+            )
+
+        except Exception as e:
+            return GitInfo(
+                valid=False,
+                error=str(e),
+                branch='',
+                status='',
+                changes=0,
+                github_repo_name='-'
+            )
+
+    @staticmethod
+    def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
+        """
+        Extracts the GitHub repository name from git remote URL.
+
+        Parameters:
+        -----------
+        repo_path : str
+            Path to the remote repository.
+        github_username : str
+            GitHub username to remove from the repo name if present.
+
+        Returns:
+        --------
+        str
+            GitHub repository name in "owner/repo" format or "-" if not found.
+        """
+        path = Path(repo_path).expanduser()
+
+        if not (path / ".git").exists():
+            return "-"
+
+        try:
+            # Get remote URL
+            remote_result = subprocess.run(
+                ["git", "-C", str(path), "remote", "get-url", "origin"],
+                capture_output=True, text=True, timeout=5
+            )
+
+            if remote_result.returncode != 0:
+                return "-"
+
+            remote_url = remote_result.stdout.strip()
+
+            # Parse GitHub URL (both HTTPS and SSH formats)
+            # HTTPS: https://github.com/user/repo.git
+            # SSH: git@github.com:user/repo.git
+
+            if "github.com" not in remote_url:
+                return "-"
+
+            # Extract owner/repo
+            if remote_url.startswith("git@github.com:"):
+                # SSH format: git@github.com:user/repo.git
+                repo_part = remote_url.replace("git@github.com:", "")
+            elif "github.com/" in remote_url:
+                # HTTPS format: https://github.com/user/repo.git
+                repo_part = remote_url.split("github.com/")[1]
+            else:
+                return "-"
+
+            # Remove .git suffix if present
+            repo_part = repo_part.replace(".git", "")
+
+            # Remove GitHub username from path if present
+            repo_part = repo_part.replace(f"{github_username}/", "")
+
+            return repo_part
+
+        except (subprocess.TimeoutExpired, Exception):
+            return "-"
+
+
     def store_selected_repo_path(self, repo_path: str) -> None:
         """
         Stores the path of the selected repository in a file named
@@ -28,7 +255,7 @@ class GitRepoService:
         current directory of the terminal to that path.
         """
         config_parent_path = self.get_config().config_path.parent
-        selected_repo_path_file = config_parent_path / 'selected-repo.txt.'
+        selected_repo_path_file = config_parent_path / 'selected-repo.txt'
 
         try:
             with open(selected_repo_path_file, 'w') as f:

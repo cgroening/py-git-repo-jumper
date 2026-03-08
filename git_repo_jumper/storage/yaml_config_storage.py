@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from git_repo_jumper.domain.models import Config, Repo
+from git_repo_jumper.domain.models import Config, Repo, RepoSelectorColumnWidths
 from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
 from git_repo_jumper.storage.config_storage import ConfigStorage
 
@@ -53,7 +53,11 @@ class YamlConfigStorage(ConfigStorage):
             raise ConfigParseError(self._config_path, str(e))
 
         # Parse config values
-        git_program_name = self._parse_git_program(
+        repo_selector_column_widths = self._parse_repo_selector_column_widths(
+            data.get('repo-selector-column-widths', None)
+        )
+
+        git_tool_name = self._parse_git_program(
             data.get('git-program', None)
         )
         github_username = self._parse_github_username(
@@ -63,9 +67,31 @@ class YamlConfigStorage(ConfigStorage):
 
         return Config(
             config_path=self._config_path,
-            git_tool_name=git_program_name,
+            repo_selector_column_widths=repo_selector_column_widths,
+            git_tool_name=git_tool_name,
             github_username=github_username,
             repos=repos
+        )
+
+    @staticmethod
+    def _parse_repo_selector_column_widths(column_widths_raw: dict | None) \
+    -> RepoSelectorColumnWidths:
+        """
+        Parses the repo selector column widths from the raw YAML data and
+        returns a RepoSelectorColumnWidths object.
+        """
+        if not isinstance(column_widths_raw, dict):
+            return RepoSelectorColumnWidths()
+
+        default_widths = RepoSelectorColumnWidths()
+
+        return RepoSelectorColumnWidths(
+            name=column_widths_raw.get('name', default_widths.name),
+            branch=column_widths_raw.get('branch', default_widths.branch),
+            status=column_widths_raw.get('status', default_widths.status),
+            github_repo_name=column_widths_raw.get(
+                'github_repo_name', default_widths.github_repo_name
+            )
         )
 
     @staticmethod
