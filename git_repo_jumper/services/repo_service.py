@@ -4,18 +4,19 @@ from git_repo_jumper.storage.config_storage import ConfigStorage
 
 class GitRepoService:
     _storage: ConfigStorage
-    _config: Config
+    _config: Config | None
 
 
     def __init__(self, storage: ConfigStorage):
         self._storage = storage
+        self._config = None
+
+    def get_config(self) -> Config:
+        if self._config:
+            return self._config
+
         self._config = self._storage.load_config()
-
-    def fetch_repos(self) -> list[Repo] | None:
-        return self._config.repos
-
-    def get_git_tool_name(self) -> str | None:
-        return self._config.git_tool_name
+        return self._config
 
     def store_selected_repo_path(self, path: str) -> None:
         print(self._config.config_path)
