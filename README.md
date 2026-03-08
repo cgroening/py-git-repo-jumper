@@ -1,4 +1,4 @@
-# 📦 Git Repo Jumper
+# 🐙 🚀 Git Repo Jumper
 
 A fast and elegant terminal-based Git repository selector with fuzzy finding. Quickly navigate between your repositories and open them in your favorite Git TUI tool.
 
@@ -7,7 +7,8 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
 
 ![Logo](logo_dark_1.png)
 
-![Screenshot](screenshots/screenshot.png)
+![Screenshot](screenshots/screenshot_1.png)
+![Screenshot](screenshots/screenshot_2.png)
 
 ## ✨ Features
 
@@ -18,11 +19,9 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
 - 🐙 **GitHub Integration** – Automatically extracts and displays GitHub repository names
 - 🚨 **Error Handling** – Invalid repositories shown in a red panel before selection
 - 📂 **Auto-naming** – Uses folder names if no explicit name is provided
-- 🔧 **Flexible** – Works with lazygit, gitui, tig or any Git TUI tool
-- 🔄 **Config Fallback** – Tries custom config first, falls back to default
-- 📝 **Shell Integration** – Supports directory changing via last-repo.txt
+- 🔧 **Flexible** – Works with lazygit, gitui, tig or any other Git TUI tool
+- 📝 **Shell Integration** – Supports directory changing via `selected-repo.txt`
 - 🏷️ **Filtering** – Hide repositories with `show: false`
-- 🔤 **Alphabetical Sorting** – Repositories sorted by name
 
 ### Planned features
 
@@ -53,33 +52,42 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
    cd git-repo-selector
    ```
 
-2. Install Python dependencies:
-   ```zsh
-   pip install -r requirements.txt
-   ```
+2. Install the package if you want the `rjump` command available globally:
 
-3. Create your `config.yaml`:
+```zsh
+uv pip install .
+```
 
-   See `src/config.yaml` for an example.
+Alternatively, Git Repo Jumper can be run without installation, see Section [Without Installation](#without-installation).
+
+3. Create your `config.yaml`: See [Configuration](#-configuration)
 
 4. (Optional) Set up shell integration (see [Shell Integration](#-shell-integration))
 
 ## ⚙️ Configuration
 
-Create a `config.yaml` file in the same directory as `main.py`:
+Create a `config.yaml` file in `~/.config/git-repo-jumper/`. Alternatively, you can place the configuration file at a location of a choice and pass the path with the `--config` option.
 
 ```yaml
 # Git program to use (lazygit, gitui, tig, gh, etc.)
 git-program: lazygit
 
-# Your GitHub username (optional - shortens repo names)
+# Your GitHub username (optional - shortens remote repo names)
 github-username: yourusername
+
+# Column widths for the repository selector (fuzzy finder) - optional
+repo-selector-column-widths:
+  name: 30
+  branch: 14
+  status: 6
+  github_repo_name: 20
 
 # List of repositories
 repos:
   # With explicit name
   - name: My Project
     path: ~/projects/my-project
+    fav: true
 
   # Without name - uses folder name "dotfiles"
   - path: ~/dotfiles
@@ -98,12 +106,14 @@ repos:
 
 | Option | Type | Required | Description | Default |
 |--------|------|----------|-------------|---------|
-| `git-program` | string | No | Git TUI tool to use | `lazygit` |
+| `git-program` | string | No | Git TUI tool to use | – |
 | `github-username` | string | No | Your GitHub username (removes from display) | `""` |
+| `repo-selector-column-widths` | map | No | Column widths for the repository selector (fuzzy finder) | `{}` |
 | `repos` | list | Yes | List of repository configurations | `[]` |
 | `repos[].name` | string | No | Display name | folder name |
 | `repos[].path` | string | Yes | Full path to repository | - |
 | `repos[].show` | boolean | No | Whether to show in list | `true` |
+| `repos[].fav` | boolean | No | Whether to stick to top | `false` |
 
 ## 📖 Usage
 
@@ -111,26 +121,36 @@ repos:
 
 ```zsh
 # Run directly
-python main.py
+rjump       # defaults to rjump list
+rjump list
 
 # Or with shell function (if configured)
 rj
 ```
 
+### Without Installation
+
+The package can also be run without installation from the project root:
+
+```zsh
+python -m git_repo_jumper
+```
+
 ### Command Line Options
 
 ```zsh
-# Use a specific git program
-python main.py --program gitui
-
 # Use a custom config file
-python main.py --config ~/my-repos.yaml
+rjump --c ~/my-repos.yaml
+rjump --config ~/my-repos.yaml
 
-# Start fresh (remove last-repo.txt)
-python main.py --clean
+# Save path of selected repo to selected-repo.txt only
+# and do not open git tool like lazygit
+rjump list -s
+rjump list --save-only
 
-# Combine options
-python main.py --program tig --config ~/repos.yaml --clean
+# Fetch latest changes of remote repos
+rjump list -f
+rjump list --fetch
 ```
 
 ### Available Arguments
@@ -163,15 +183,21 @@ Now simply run:
 rj
 ```
 
-If you want to cd in to the selected repository after exiting the git program, add this to your shell function:
+If you want to cd in to the selected repository after exiting the git program, add this to your shell function (**make sure to change `last_repo_file`**):
 
 ```zsh
+# ============================================================================ #
+# rj - Git Repo Jumper shortcut
+#
+# Runs the Git Repo Jumper script and changes to the selected repository
+# after the script is closed (= Lazygit was closed).
+# ============================================================================ #
 rj() {
     # Run the Git Repo Jumper script
-    python3 ~/path/to/git-repo-selector/src/main.py -c /Users/username/Dotfiles/git-repo-jumper/config.yaml
+    rjump "$@"
 
     # Change to cwd to the last selected repo
-    local last_repo_file="/Users/cgroening/Dotfiles/git-repo-jumper/last-repo.txt"
+    local last_repo_file="/Users/<USERNAME>/Dotfiles/git-repo-jumper/selected-repo.txt"
     if [[ -f "$last_repo_file" ]]; then
         local target_dir=$(cat "$last_repo_file")
         if [[ -d "$target_dir" ]]; then
@@ -184,6 +210,10 @@ rj() {
         echo "Last repo file not found."
     fi
 }
+
+r() { rj "$@" }
+rs() { rj -s "$@" }
+rf() { rj -f "$@" }
 ```
 
 ## 🎯 Features in Detail
