@@ -128,16 +128,26 @@ class ListCommand:
         else:
             raise ValueError(f'Invalid alignment: {align}')
 
-    @staticmethod
-    def create_fuzzy_finder(choices: list[Choice]) -> Any:
+    def create_fuzzy_finder(self, choices: list[Choice]) -> Any:
         """
         Creates and returns an InquirerPy fuzzy finder prompt with the given
         choices.
         """
+        col_widths = self._config.repo_selector_column_widths
+
+        fix_str = self.str_with_fixed_width
+
+        name = fix_str('Repository Name', col_widths.name)
+        branch = fix_str('Current Branch', col_widths.branch)
+        status = fix_str('Status', col_widths.status)
+        github_repo_name = 'GitHub Repo Name'
+
+        header_line = f'     {name} │ {branch} │ {status} │ {github_repo_name}'
+
         print()  # Empty line for better spacing before the prompt
         return inquirer.fuzzy(  # type: ignore
             message='Select repository (type to filter):',
-            instruction='\n(Name | Branch | Status | GitHub | Path)',
+            instruction=f'\n{header_line}',
             choices=choices,
             default='',
             max_height='90%',
