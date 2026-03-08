@@ -48,8 +48,8 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
 
 1. Clone this repository:
    ```zsh
-   git clone https://github.com/yourusername/git-repo-selector.git
-   cd git-repo-selector
+   git clone https://github.com/cgroening/py-git-repo-jumper.git
+   cd py-git-repo-jumper
    ```
 
 2. Install the package if you want the `rjump` command available globally:
@@ -140,7 +140,7 @@ python -m git_repo_jumper
 
 ```zsh
 # Use a custom config file
-rjump --c ~/my-repos.yaml
+rjump -c ~/my-repos.yaml
 rjump --config ~/my-repos.yaml
 
 # Save path of selected repo to selected-repo.txt only
@@ -153,35 +153,9 @@ rjump list -f
 rjump list --fetch
 ```
 
-### Available Arguments
-
-| Argument | Short | Description |
-|----------|-------|-------------|
-| `--program` | `-p` | Git program to use (overrides config) |
-| `--config` | `-c` | Path to config file (with fallback) |
-| `--clean` | - | Remove last-repo.txt before starting |
-| `--help` | `-h` | Show help message |
-
 ## 🐚 Shell Integration
 
-Add a shell function to your `~/.zshrc` or `~/.bashrc` for easy access:
-
-```zsh
-rj() {
-    # Adjust path to where you placed main.py
-    python3 ~/path/to/git-repo-selector/src/main.py "$@"
-}
-```
-
-Then reload your shell:
-```zsh
-source ~/.zshrc  # or ~/.bashrc
-```
-
-Now simply run:
-```zsh
-rj
-```
+Add a shell function to your `~/.zshrc` or `~/.bashrc` for easy access.
 
 If you want to cd in to the selected repository after exiting the git program, add this to your shell function (**make sure to change `last_repo_file`**):
 
@@ -214,6 +188,16 @@ rj() {
 r() { rj "$@" }
 rs() { rj -s "$@" }
 rf() { rj -f "$@" }
+```
+
+Then reload your shell:
+```zsh
+source ~/.zshrc  # or ~/.bashrc
+```
+
+Now simply run:
+```zsh
+rj
 ```
 
 ## 🎯 Features in Detail
@@ -266,14 +250,6 @@ yourusername/dotfiles    →  Dotfiles
 otherusername/repo       →  otherusername/repo  (unchanged)
 ```
 
-### Config File Behavior
-
-The tool searches for config files in this order:
-1. Custom path (if `--config` is provided)
-2. `config.yaml` in script directory (default)
-
-If a custom config is not found, it automatically falls back to the default with a warning message.
-
 ### Alphabetical Sorting
 
 All repositories are sorted alphabetically by name (case-insensitive) for easy scanning.
@@ -292,16 +268,6 @@ repos:
     show: false  # Won't appear in the list
 ```
 
-## 🛠️ Supported Git Programs
-
-Built-in support for:
-- **lazygit** - Full-featured TUI (recommended) - [GitHub](https://github.com/jesseduffield/lazygit)
-- **gitui** - Fast TUI written in Rust - [GitHub](https://github.com/extrawurst/gitui)
-- **tig** - Text-mode interface for git - [GitHub](https://github.com/jonas/tig)
-- **gh** - GitHub CLI (opens in browser) - [GitHub](https://github.com/cli/cli)
-
-Custom programs are also supported (assumes `-p <path>` flag).
-
 ## 📋 Requirements
 
 - Python 3.10+
@@ -309,10 +275,6 @@ Custom programs are also supported (assumes `-p <path>` flag).
 - PyYAML >= 6.0.0
 - rich >= 13.0.0
 
-Install all requirements:
-```zsh
-pip install -r requirements.txt
-```
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -328,19 +290,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Press `Ctrl+C` to cancel at any time
 - The fuzzy finder searches across all visible columns
 - Invalid repos are shown but not selectable
-- Use `--clean` to reset if last-repo.txt gets corrupted
 - Paths support `~` for home directory expansion
 
 ## 🐛 Troubleshooting
 
 **Issue:** "Config file not found"
-- **Solution:** Create `config.yaml` in the script directory or use `--config` flag
+- **Solution:** Create `config.yaml` in `~/.config/git-repo-jumper/` or use `--config` flag
 
 **Issue:** "No valid git repositories found"
 - **Solution:** Check that paths in config.yaml are correct and point to git repositories
 
 **Issue:** Git program not found
-- **Solution:** Install the git tool (e.g., `brew install lazygit`) or specify a different one with `--program`
+- **Solution:** Install the git tool (e.g., `brew install lazygit`) and set it in the `config.yaml`
 
 **Issue:** Repository shows as invalid
 - **Solution:** Verify the path exists and contains a `.git` directory
