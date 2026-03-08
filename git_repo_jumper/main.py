@@ -13,17 +13,6 @@ app = typer.Typer(help='Git Repository Jumper', invoke_without_command=True)
 
 # Dependency composition: Wire all layers together
 _storage = YamlConfigStorage()
-
-
-# try:
-#     _storage = YamlConfigStorage()
-# except (ConfigNotFoundError, ConfigParseError) as e:
-#     print_error(str(e))
-#     sys.exit(1)
-# except Exception as e:
-#     print_error(f'Unexpected error: {str(e)}')
-#     sys.exit(1)
-
 _service = GitRepoService(_storage)
 
 
@@ -47,23 +36,29 @@ def default(
         ListCommand(_service).run()
 
 
-# TODO: Remove this:
-@app.command()
-def test():
-    typer.echo('Test command called')
-
-
 @app.command(name='list')
 def list_repos(
     cd_only: bool = typer.Option(
         False,
         '-s', '--save-only',
         help=(
-            'Save path of selected repo to last-repo.txt without opening '
-            'the configured git tool.'),
+            'Save path of selected repo to selected-repo.txt (in parent folder '
+            'of config file) without opening the configured git tool.'),
     )
 ):
     ListCommand(_service).run(cd_only=cd_only)
+
+
+# TODO: Implement this (open the recentl selected repo again)
+@app.command()
+def recent():
+    typer.echo('Command not implemented yet.')
+
+
+# TODO: Implement this (return path of the config file)
+@app.command()
+def config():
+    typer.echo('Command not implemented yet.')
 
 
 def main():

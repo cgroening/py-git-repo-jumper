@@ -26,3 +26,18 @@ class ConfigParseError(Exception):
     def __str__(self) -> str:
         return f'Error parsing YAML file:\n{str(self._config_path)}\n\n' \
                + f'{self._error_message}'
+
+
+class SelectedRepoPathSaveError(Exception):
+    """Raised when there is an error saving the selected repo path on disk."""
+    _selected_repo_path_file: str
+    _error_message: str
+
+
+    def __init__(self, _selected_repo_path_file: str, error_message: str):
+        self._selected_repo_path_file = _selected_repo_path_file
+        self._error_message = error_message
+
+    def __str__(self) -> str:
+        return ('Error saving selected repo path in:\n'
+                f'{self._selected_repo_path_file}\n\n{self._error_message}')

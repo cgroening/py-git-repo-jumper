@@ -29,7 +29,7 @@ class Config:
     """
     Configuration data for git-repo-jumper.
     """
-    config_path: Path | None
+    config_path: Path
     git_tool_name: str | None
     github_username: str | None
     repos: list[Repo] | None

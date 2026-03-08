@@ -1,11 +1,13 @@
-import pprint
+# import pprint
 from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
-from git_repo_jumper.output import print_error, print_warning, print_success, print_info, print_custom_panel
+from git_repo_jumper.output import print_error, print_warning
 from git_repo_jumper.domain.models import Config, Repo
-from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
+from git_repo_jumper.domain.errors import (
+    ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError
+)
 from git_repo_jumper.services.repo_service import GitRepoService
 
 
@@ -29,12 +31,16 @@ class ListCommand:
             print_error(str(e))
             return
         except Exception as e:
-            print_error(f'Unexpected error: {str(e)}')
+            print_error(f'Unexpected error while reading config: {str(e)}')
             return
 
         self.print_repos()
 
     def print_repos(self) -> None:
+        """
+        Displays the repositories from the config file in a fuzzy finder and
+        allows the user to select one.
+        """
         repos = self._config.repos
         if not repos:
             print_error('No repositories found in config.')
@@ -58,21 +64,48 @@ class ListCommand:
             marker_pl=' ',
         ).execute()
 
-        if not isinstance(selected, int):
+        self.handle_selected_repo(selected)
+
+    def handle_selected_repo(self, selected_id: int) -> None:
+        """
+        Handles the selected repository by storing its path, printing its
+        details and optionally opening the git tool.
+        """
+        repos = self._config.repos
+
+        if not repos:
+            return
+
+        if selected_id < 0 or selected_id >= len(repos):
             print_warning('Selection cancelled.')
             return
 
-        self._service.store_selected_repo_path(repos[selected].path)
+        # Store the selected repository path for use in the 'cd' command
+        try:
+            self._service.store_selected_repo_path(repos[selected_id].path)
+        except SelectedRepoPathSaveError as e:
+            print_error(str(e))
+            return
+        except Exception as e:
+            print_error(f'Unexpected error while storing selected path: {str(e)}')
+            return
 
-        if self._cd_only:
-            self.print_selected_repo(repos[selected])
-        else:
-            self.print_selected_repo(repos[selected], 'lazygit')
+        # Get the name of the git tool to open, if not in cd-only mode
+        git_tool_name = None
+        if not self._cd_only:
+            if not self._config.git_tool_name:
+                print_warning('No git tool configured.')
+            else:
+                git_tool_name = self._config.git_tool_name
+
+        # Print the selected repo details and the git tool that will be opened
+        self.print_selected_repo(repos[selected_id], git_tool_name)
 
     @staticmethod
     def print_selected_repo(
         repo: Repo, git_program_name: str | None = None
     ) -> None:
+        """Prints details of the selected repository in a Rich table."""
         table = Table(title='[cyan]ℹ Selected Repository[/cyan]',
                       show_header=False, show_lines=True)
         table.add_column(style='bold', overflow='fold')
@@ -86,5 +119,3 @@ class ListCommand:
             )
 
         console.print(table)
-
-
