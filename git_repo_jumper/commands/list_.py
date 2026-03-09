@@ -6,7 +6,7 @@ from InquirerPy import inquirer
 from InquirerPy import get_style  # type: ignore
 from InquirerPy.base.control import Choice
 from git_repo_jumper.output import print_custom_panel, print_error, print_warning
-from git_repo_jumper.domain.models import Config, Repo, GitInfo
+from git_repo_jumper.domain.models import Config, Repo, GitInfo, RepoSelectorColumnWidths
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError
 )
@@ -131,6 +131,17 @@ class ListCommand:
 
         return f'{star}{name} │ {branch} │ {status} │ {github_repo_name}'
 
+    def _stretch_columns(self) -> None:
+        """
+        Calculates the necessary column widths for the fuzzy finder based on
+        the longest values among the repositories. If the column widths in the
+        config are too small, the columns "Repository Name" and
+        "GitHub Repo Name" are equally stretched until they are wide enough or
+        the maximum width (console width) is reached.
+        """
+        pass
+
+    # TODO: Put this method in a separate utility module and add unit tests for it
     @staticmethod
     def str_with_fixed_width(text: str, width: int, align: str = 'left') -> str:
         """
