@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
 
 
@@ -40,7 +40,7 @@ class Config:
     repos: list[Repo] | None
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True)
 class RepoSelectorColumnWidths:
     """
     Maximum column widths for the repository selector UI (e.g. fuzzy finder).
@@ -49,6 +49,11 @@ class RepoSelectorColumnWidths:
     branch: int = 15
     status: int = 10
     github_repo_name: int = 20
+
+
+    def total(self) -> int:
+        """Returns the total width of all columns combined."""
+        return sum(getattr(self, f.name) for f in fields(self))
 
 
 @dataclass(slots=True, frozen=True)

@@ -1,4 +1,5 @@
 # import pprint
+import math
 from typing import Any
 from rich.console import Console
 from rich.table import Table
@@ -6,7 +7,7 @@ from InquirerPy import inquirer
 from InquirerPy import get_style  # type: ignore
 from InquirerPy.base.control import Choice
 from git_repo_jumper.output import print_custom_panel, print_error, print_warning
-from git_repo_jumper.domain.models import Config, Repo, GitInfo, RepoSelectorColumnWidths
+from git_repo_jumper.domain.models import Config, Repo, GitInfo
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError
 )
@@ -91,6 +92,7 @@ class ListCommand:
             return
 
         # Format the repositories into choices for the fuzzy finder
+        self._adjust_column_widths()
         choices: list[Choice] = [
             Choice(value=i, name=self.format_fuzzy_finder_choice(repo))
             for i, repo in enumerate(self._visible_repos)
@@ -131,15 +133,110 @@ class ListCommand:
 
         return f'{star}{name} │ {branch} │ {status} │ {github_repo_name}'
 
-    def _stretch_columns(self) -> None:
+    def _adjust_column_widths(self) -> None:
         """
         Calculates the necessary column widths for the fuzzy finder based on
         the longest values among the repositories. If the column widths in the
-        config are too small, the columns "Repository Name" and
-        "GitHub Repo Name" are equally stretched until they are wide enough or
-        the maximum width (console width) is reached.
+        config are too small to fit the longest values, they are increased
+        based on the available console width and the priority of the columns.
+
+        The "Repository Name" and "GitHub Repo Name" columns have the highest
+        priority: Extra space is first allocated to them equally until they can
+        fit their longest values or the console width is reached.
+        Then the "Current Branch" column gets extra space and finally the
+        "Status" column.
+
+        If the console width is too small to maintain the column width in the
+        config, the columns "Reository Name" and "GitHub Repo Name" are shrunk
+        equally until they fit.
         """
-        pass
+        # Calculate the max width needed for each column based on the repo data
+        max_widths: dict[str, int] = {
+            'name': 0, 'github_repo_name': 0, 'branch': 0, 'status': 0
+        }
+
+        for repo in self._visible_repos:
+            max_widths['name'] = max(max_widths['name'], len(repo.name))
+            git = repo.git_info
+            if not git:
+                continue
+            if git.github_repo_name:
+                max_widths['github_repo_name'] = max(
+                    max_widths['github_repo_name'], len(git.github_repo_name)
+                )
+            if git.branch:
+                max_widths['branch'] = max(max_widths['branch'], len(git.branch))
+            if git.status:
+                max_widths['status'] = max(max_widths['status'], len(git.status))
+
+        # Calculate available space
+        col_widths = self._config.repo_selector_column_widths
+
+        # Fixed-width overhead: star prefix (2) + 3 separators ' │ ' (3 each)
+        # + fuzzy finder left padding (~5)
+        overhead = 2 + 3 * 3 + 5
+        available = console.width - col_widths.total() - overhead
+
+        # Not enough space: shrink name and github_repo_name equally
+        if available < 0:
+            deficit = -available
+            shrink_each = math.ceil(deficit / 2)
+            col_widths.name = max(1, col_widths.name - shrink_each)
+            col_widths.github_repo_name = max(
+                1, col_widths.github_repo_name - (deficit - shrink_each)
+            )
+            return
+
+        if available == 0:
+            return
+
+        # Priority groups: equal-priority columns are grouped together
+        priority_groups: list[list[str]] = [
+            ['name', 'github_repo_name'],
+            ['branch'],
+            ['status'],
+        ]
+
+        # Allocate extra space to columns based on priority until available
+        # space is used up
+        for group in priority_groups:
+            if available <= 0:
+                break
+
+            # Calculate how much extra width each column in the group needs
+            needs = {
+                col: max(0, max_widths[col] - getattr(col_widths, col))
+                for col in group
+            }
+            total_need = sum(needs.values())
+            if total_need == 0:
+                continue
+
+            # Don't allocate more than what's available or needed
+            budget = min(available, total_need)
+            gives: dict[str, int] = {col: 0 for col in group}
+            remaining = budget
+
+            # First pass: give each column an equal share, capped at its need
+            share = remaining / len(group)
+            for col in group:
+                gives[col] = min(needs[col], math.floor(share))
+                remaining -= gives[col]
+
+            # Second pass: distribute leftover to columns that still need more
+            # (e.g. when one column needed less than its share)
+            for col in group:
+                if remaining <= 0:
+                    break
+                extra = min(needs[col] - gives[col], remaining)
+                gives[col] += extra
+                remaining -= extra
+
+            # Apply the calculated increases
+            for col in group:
+                setattr(col_widths, col, getattr(col_widths, col) + gives[col])
+
+            available -= (budget - remaining)
 
     # TODO: Put this method in a separate utility module and add unit tests for it
     @staticmethod
