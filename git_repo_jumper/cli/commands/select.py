@@ -7,7 +7,7 @@ from rich.table import Table
 from InquirerPy import inquirer
 from InquirerPy import get_style  # type: ignore
 from InquirerPy.base.control import Choice
-from git_repo_jumper.output import (
+from git_repo_jumper.cli.output import (
     print_custom_panel, print_error, print_warning, str_with_fixed_width
 )
 from git_repo_jumper.domain.models import Config, Repo, GitInfo
