@@ -282,6 +282,11 @@ class GitRepoService:
             Path to the repository.
         git_program : str
             Git program to use (e.g., lazygit, gitui, tig).
+
+        Raises:
+        -------
+        ConfiguredGitToolNotFoundError
+            If the specified git program is not found or fails to open.
         """
         path = Path(repo_path).expanduser()
 
