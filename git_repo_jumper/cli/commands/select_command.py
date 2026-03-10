@@ -10,6 +10,7 @@ from InquirerPy.base.control import Choice
 from git_repo_jumper.cli.output import (
     print_custom_panel, print_error, print_warning, str_with_fixed_width
 )
+from git_repo_jumper.cli.column_widths import ColumnConfig, ColumnWidthsAdjuster
 from git_repo_jumper.domain.models import Config, Repo, GitInfo
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError,
@@ -22,6 +23,13 @@ console = Console()
 
 
 class SelectCommand:
+    _COLUMN_HEADERS: dict[str, str] = {
+        'name': 'Repository Name',
+        'branch': 'Current Branch',
+        'status': 'Status',
+        'github_repo_name': 'GitHub Repo Name',
+    }
+
     _service: GitRepoService
     _cd_only: bool
     _do_fetch: bool
@@ -181,66 +189,98 @@ class SelectCommand:
         overhead = 2 + 3 * 3 + 5
         available = console.width - col_widths.total() - overhead
 
-        # Not enough space: shrink name and github_repo_name equally
-        if available < 0:
-            deficit = -available
-            shrink_each = math.ceil(deficit / 2)
-            col_widths.name = max(1, col_widths.name - shrink_each)
-            col_widths.github_repo_name = max(
-                1, col_widths.github_repo_name - (deficit - shrink_each)
-            )
-            return
+        # # Not enough space: shrink name and github_repo_name equally
+        # if available < 0:
+        #     deficit = -available
+        #     shrink_each = math.ceil(deficit / 2)
+        #     col_widths.name = max(1, col_widths.name - shrink_each)
+        #     col_widths.github_repo_name = max(
+        #         1, col_widths.github_repo_name - (deficit - shrink_each)
+        #     )
+        #     return
 
-        if available == 0:
-            return
+        # if available == 0:
+        #     return
 
-        # Priority groups: equal-priority columns are grouped together
-        priority_groups: list[list[str]] = [
-            ['name', 'github_repo_name'],
-            ['branch'],
-            ['status'],
-        ]
+        # # Priority groups: equal-priority columns are grouped together
+        # priority_groups: list[list[str]] = [
+        #     ['name', 'github_repo_name'],
+        #     ['branch'],
+        #     ['status'],
+        # ]
 
-        # Allocate extra space to columns based on priority until available
-        # space is used up
-        for group in priority_groups:
-            if available <= 0:
-                break
+        # # Allocate extra space to columns based on priority until available
+        # # space is used up
+        # for group in priority_groups:
+        #     if available <= 0:
+        #         break
 
-            # Calculate how much extra width each column in the group needs
-            needs = {
-                col: max(0, max_widths[col] - getattr(col_widths, col))
-                for col in group
-            }
-            total_need = sum(needs.values())
-            if total_need == 0:
-                continue
+        #     # Calculate how much extra width each column in the group needs
+        #     needs = {
+        #         col: max(0, max_widths[col] - getattr(col_widths, col))
+        #         for col in group
+        #     }
+        #     total_need = sum(needs.values())
+        #     if total_need == 0:
+        #         continue
 
-            # Don't allocate more than what's available or needed
-            budget = min(available, total_need)
-            gives: dict[str, int] = {col: 0 for col in group}
-            remaining = budget
+        #     # Don't allocate more than what's available or needed
+        #     budget = min(available, total_need)
+        #     gives: dict[str, int] = {col: 0 for col in group}
+        #     remaining = budget
 
-            # First pass: give each column an equal share, capped at its need
-            share = remaining / len(group)
-            for col in group:
-                gives[col] = min(needs[col], math.floor(share))
-                remaining -= gives[col]
+        #     # First pass: give each column an equal share, capped at its need
+        #     share = remaining / len(group)
+        #     for col in group:
+        #         gives[col] = min(needs[col], math.floor(share))
+        #         remaining -= gives[col]
 
-            # Second pass: distribute leftover to columns that still need more
-            # (e.g. when one column needed less than its share)
-            for col in group:
-                if remaining <= 0:
-                    break
-                extra = min(needs[col] - gives[col], remaining)
-                gives[col] += extra
-                remaining -= extra
+        #     # Second pass: distribute leftover to columns that still need more
+        #     # (e.g. when one column needed less than its share)
+        #     for col in group:
+        #         if remaining <= 0:
+        #             break
+        #         extra = min(needs[col] - gives[col], remaining)
+        #         gives[col] += extra
+        #         remaining -= extra
 
-            # Apply the calculated increases
-            for col in group:
-                setattr(col_widths, col, getattr(col_widths, col) + gives[col])
+        #     # Apply the calculated increases
+        #     for col in group:
+        #         setattr(col_widths, col, getattr(col_widths, col) + gives[col])
 
-            available -= (budget - remaining)
+        #     available -= (budget - remaining)
+
+
+
+        column_config = {
+            'name': ColumnConfig(
+                min_width=col_widths.name,
+                max_width=max(max_widths['name'], len(self._COLUMN_HEADERS['name'])),
+                stretch_priority=1, shrink_priority=1,
+            ),
+            'github_repo_name': ColumnConfig(
+                min_width=col_widths.github_repo_name,
+                max_width=max(max_widths['github_repo_name'], len(self._COLUMN_HEADERS['github_repo_name'])),
+                stretch_priority=1, shrink_priority=1,
+            ),
+            'branch': ColumnConfig(
+                min_width=col_widths.branch,
+                max_width=max(max_widths['branch'], len(self._COLUMN_HEADERS['branch'])),
+                stretch_priority=2, shrink_priority=2,
+            ),
+            'status': ColumnConfig(
+                min_width=col_widths.status,
+                max_width=max(max_widths['status'], len(self._COLUMN_HEADERS['status'])),
+                stretch_priority=3, shrink_priority=3,
+            ),
+        }
+
+        adjuster = ColumnWidthsAdjuster(column_config, available)
+        calculated = adjuster.get_calculated_widths()
+
+        # Ergebnisse zurückschreiben
+        for col_name, width in calculated.items():
+            setattr(col_widths, col_name, width)
 
     def _create_fuzzy_finder(self, choices: list[Choice]) -> Any:
         """
@@ -251,10 +291,11 @@ class SelectCommand:
 
         fix_str = str_with_fixed_width
 
-        name = fix_str('Repository Name', col_widths.name)
-        branch = fix_str('Current Branch', col_widths.branch)
-        status = fix_str('Status', col_widths.status)
-        github_repo_name = 'GitHub Repo Name'
+        headers = self._COLUMN_HEADERS
+        name = fix_str(headers['name'], col_widths.name)
+        branch = fix_str(headers['branch'], col_widths.branch)
+        status = fix_str(headers['status'], col_widths.status)
+        github_repo_name = headers['github_repo_name']
 
         header_line = f'     {name} │ {branch} │ {status} │ {github_repo_name}'
 
