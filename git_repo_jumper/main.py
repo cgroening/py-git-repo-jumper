@@ -1,6 +1,6 @@
 import typer
 from pathlib import Path
-from git_repo_jumper.cli.commands.select import SelectCommand
+from git_repo_jumper.cli.commands.select_command import SelectCommand
 from git_repo_jumper.services.repo_service import GitRepoService
 from git_repo_jumper.storage.yaml_config_storage import YamlConfigStorage
 
