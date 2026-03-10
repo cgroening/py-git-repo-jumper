@@ -166,7 +166,7 @@ class SelectCommand:
         # + fuzzy finder left padding (~5)
         overhead = 2 + 3 * 3 + 5
         col_widths = self._config.repo_selector_column_widths
-        available = console.width - col_widths.total() - overhead
+        available = console.width - overhead
 
         column_headers = self._COLUMN_HEADERS
         column_config = {
