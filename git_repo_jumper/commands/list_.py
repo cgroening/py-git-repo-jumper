@@ -6,7 +6,9 @@ from rich.table import Table
 from InquirerPy import inquirer
 from InquirerPy import get_style  # type: ignore
 from InquirerPy.base.control import Choice
-from git_repo_jumper.output import print_custom_panel, print_error, print_warning
+from git_repo_jumper.output import (
+    print_custom_panel, print_error, print_warning, str_with_fixed_width
+)
 from git_repo_jumper.domain.models import Config, Repo, GitInfo
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError
@@ -40,10 +42,10 @@ class ListCommand:
             print_error(f'Unexpected error while reading config: {str(e)}')
             return
 
-        self.show_application_header()
-        self.show_repo_selector()
+        self._show_application_header()
+        self._show_repo_selector()
 
-    def show_application_header(self) -> None:
+    def _show_application_header(self) -> None:
         """
         Displays the application header with name and short usage instructions.
         """
@@ -62,7 +64,7 @@ class ListCommand:
 
         print_custom_panel(f'{application_name}\n\n{instructions}', 'cyan')
 
-    def show_repo_selector(self) -> None:
+    def _show_repo_selector(self) -> None:
         """
         Displays the repositories from the config file in a fuzzy finder and
         allows the user to select one. Repos with non-existing paths are
@@ -94,13 +96,13 @@ class ListCommand:
         # Format the repositories into choices for the fuzzy finder
         self._adjust_column_widths()
         choices: list[Choice] = [
-            Choice(value=i, name=self.format_fuzzy_finder_choice(repo))
+            Choice(value=i, name=self._format_fuzzy_finder_choice(repo))
             for i, repo in enumerate(self._visible_repos)
         ]
 
         # Show the fuzzy finder and get the selected repository index
-        selected = self.create_fuzzy_finder(choices)
-        self.handle_selected_repo(selected)
+        selected = self._create_fuzzy_finder(choices)
+        self._handle_selected_repo(selected)
 
     @staticmethod
     def _print_missing_paths_warning(repos: list[Repo]) -> None:
@@ -113,7 +115,7 @@ class ListCommand:
             lines.append(f'  • {repo.name}  [dim]{repo.path}[/dim]')
         print_custom_panel('\n'.join(lines), 'yellow')
 
-    def format_fuzzy_finder_choice(self, repo: Repo) -> str:
+    def _format_fuzzy_finder_choice(self, repo: Repo) -> str:
         """
         Formats a repository into a string for display in the fuzzy finder,
         using fixed-width columns for name, branch, status and GitHub repo name.
@@ -121,7 +123,7 @@ class ListCommand:
         """
         col_widths = self._config.repo_selector_column_widths
         git_info = repo.git_info or GitInfo()
-        str_fix = self.str_with_fixed_width
+        str_fix = str_with_fixed_width
 
         star = '★ ' if repo.fav else '  '
         name = str_fix(repo.name, col_widths.name)
@@ -238,35 +240,14 @@ class ListCommand:
 
             available -= (budget - remaining)
 
-    # TODO: Put this method in a separate utility module and add unit tests for it
-    @staticmethod
-    def str_with_fixed_width(text: str, width: int, align: str = 'left') -> str:
-        """
-        Returns a string truncated or padded to fit the specified width.
-        Alignment can be 'start', 'end', or 'center'.
-        """
-        if len(text) > width:
-            if align == 'right':
-                return '…' + text[-(width - 1):]  # Truncate from left
-            return text[:width - 1] + '…'         # Truncate from right
-
-        if align == 'left':
-            return text.ljust(width)
-        elif align == 'right':
-            return text.rjust(width)
-        elif align == 'center':
-            return text.center(width)
-        else:
-            raise ValueError(f'Invalid alignment: {align}')
-
-    def create_fuzzy_finder(self, choices: list[Choice]) -> Any:
+    def _create_fuzzy_finder(self, choices: list[Choice]) -> Any:
         """
         Creates and returns an InquirerPy fuzzy finder prompt with the given
         choices.
         """
         col_widths = self._config.repo_selector_column_widths
 
-        fix_str = self.str_with_fixed_width
+        fix_str = str_with_fixed_width
 
         name = fix_str('Repository Name', col_widths.name)
         branch = fix_str('Current Branch', col_widths.branch)
@@ -293,7 +274,7 @@ class ListCommand:
         ).execute()
 
     # TODO: Refactor this method to separate concerns (e.g. storing path, printing details, opening tool)
-    def handle_selected_repo(self, selected_id: int) -> None:
+    def _handle_selected_repo(self, selected_id: int) -> None:
         """
         Handles the selected repository by storing its path, printing its
         details and optionally opening the git tool.
@@ -328,7 +309,7 @@ class ListCommand:
                 git_tool_name = self._config.git_tool_name
 
         # Print the selected repo details and the git tool that will be opened
-        self.print_selected_repo(repos[selected_id], git_tool_name)
+        self._print_selected_repo(repos[selected_id], git_tool_name)
 
         # Open the git tool if not in cd-only mode and a tool is configured
         if not self._cd_only and git_tool_name:
@@ -338,7 +319,7 @@ class ListCommand:
                 print_error(f'Error opening git tool: {str(e)}')
 
     @staticmethod
-    def print_selected_repo(
+    def _print_selected_repo(
         repo: Repo, git_program_name: str | None = None
     ) -> None:
         """Prints details of the selected repository in a Rich table."""
