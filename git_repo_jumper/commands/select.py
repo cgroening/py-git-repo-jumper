@@ -19,7 +19,7 @@ from git_repo_jumper.services.repo_service import GitRepoService
 console = Console()
 
 
-class ListCommand:
+class SelectCommand:
     _service: GitRepoService
     _cd_only: bool
     _do_fetch: bool

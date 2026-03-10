@@ -1,9 +1,6 @@
-import sys
 import typer
 from pathlib import Path
-from git_repo_jumper.output import print_error
-from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
-from git_repo_jumper.commands.list_ import ListCommand
+from git_repo_jumper.commands.select import SelectCommand
 from git_repo_jumper.services.repo_service import GitRepoService
 from git_repo_jumper.storage.yaml_config_storage import YamlConfigStorage
 
@@ -33,11 +30,11 @@ def default(
         _storage.set_config_path(config)
 
     if ctx.invoked_subcommand is None:
-        ListCommand(_service).run()
+        SelectCommand(_service).run()
 
 
-@app.command(name='list')
-def list_repos(
+@app.command()
+def select(
     cd_only: bool = typer.Option(
         False,
         '-s', '--save-only',
@@ -57,7 +54,7 @@ def list_repos(
         ),
     )
 ):
-    ListCommand(_service).run(cd_only=cd_only, do_fetch=do_fetch)
+    SelectCommand(_service).run(cd_only=cd_only, do_fetch=do_fetch)
 
 
 # TODO: Implement this (open the recentl selected repo again)

@@ -121,8 +121,8 @@ repos:
 
 ```zsh
 # Run directly
-rjump       # defaults to rjump list
-rjump list
+rjump         # defaults to rjump select
+rjump select
 
 # Or with shell function (if configured)
 rj
@@ -145,12 +145,12 @@ rjump --config ~/my-repos.yaml
 
 # Save path of selected repo to selected-repo.txt only
 # and do not open git tool like lazygit
-rjump list -s
-rjump list --save-only
+rjump select -s
+rjump select --save-only
 
 # Fetch latest changes of remote repos
-rjump list -f
-rjump list --fetch
+rjump select -f
+rjump select --fetch
 ```
 
 ## 🐚 Shell Integration
@@ -186,8 +186,8 @@ rj() {
 }
 
 r() { rj "$@" }
-rs() { rj -s "$@" }
-rf() { rj -f "$@" }
+rs() { rj select -s "$@" }
+rf() { rj select -f "$@" }
 ```
 
 Then reload your shell:
