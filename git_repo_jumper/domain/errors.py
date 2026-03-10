@@ -41,3 +41,18 @@ class SelectedRepoPathSaveError(Exception):
     def __str__(self) -> str:
         return ('Error saving selected repo path in:\n'
                 f'{self._selected_repo_path_file}\n\n{self._error_message}')
+
+class ConfiguredGitToolNotFoundError(Exception):
+    """Raised when the configured git tool is not found in the system."""
+    _git_tool_name: str
+    _error_message: str | None = None
+
+
+    def __init__(self, git_tool_name: str, e: str | None = None):
+        self._git_tool_name = git_tool_name
+
+    def __str__(self) -> str:
+        if (e := self._error_message):
+            return f'Error opening {self._git_tool_name}:\n\n{str(e)}'
+        else:
+            return f'Configured git tool not found: {self._git_tool_name}'

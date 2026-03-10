@@ -64,6 +64,11 @@ def str_with_fixed_width(text: str, width: int, align: str = 'left') -> str:
     >>> str_with_fixed_width('Hello', 10)
     'Hello     '
 
+    Raises:
+    -------
+    ValueError
+        If the alignment is not one of 'left', 'right' or 'center'.
+
     Returns:
     --------
     str

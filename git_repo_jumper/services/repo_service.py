@@ -1,7 +1,9 @@
 import subprocess
 import sys
 from pathlib import Path
-from git_repo_jumper.domain.errors import SelectedRepoPathSaveError
+from git_repo_jumper.domain.errors import (
+    SelectedRepoPathSaveError, ConfiguredGitToolNotFoundError
+)
 from git_repo_jumper.domain.models import Config, GitInfo, Repo
 from git_repo_jumper.storage.config_storage import ConfigStorage
 
@@ -44,6 +46,10 @@ class GitRepoService:
     def get_visible_repos_with_git_status(
             self, do_fetch: bool = False
     ) -> list[Repo]:
+        """
+        Returns a list of all repos not configured with `show: false` and
+        with git status information.
+        """
         repos = self.get_visible_repos()
         for repo in repos:
             repo.git_info = self.get_git_status(
@@ -245,6 +251,16 @@ class GitRepoService:
         This allows external tools (e.g. a shell function) to read the path of
         the last opened repository after the git program exits and change the
         current directory of the terminal to that path.
+
+        Parameters:
+        -----------
+        repo_path : str
+            The path of the repository to store.
+
+        Raises:
+        -------
+        SelectedRepoPathSaveError
+            If there is an error saving the repository path.
         """
         config_parent_path = self.get_config().config_path.parent
         selected_repo_path_file = config_parent_path / 'selected-repo.txt'
@@ -291,10 +307,6 @@ class GitRepoService:
             else:
                 subprocess.run(cmd, check=True)
         except FileNotFoundError:
-            # TODO: Handle this in list_.py
-            console.print(f'[red]Error: {git_program} is not installed![/red]')
-            sys.exit(1)
+            raise ConfiguredGitToolNotFoundError(git_program)
         except subprocess.CalledProcessError as e:
-            # TODO: Handle this in list_.py
-            console.print(f'[red]Error opening {git_program}: {e}[/red]')
-            sys.exit(1)
+            raise ConfiguredGitToolNotFoundError(git_program, str(e))

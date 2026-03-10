@@ -1,4 +1,5 @@
 # import pprint
+import sys
 import math
 from typing import Any
 from rich.console import Console
@@ -11,7 +12,8 @@ from git_repo_jumper.output import (
 )
 from git_repo_jumper.domain.models import Config, Repo, GitInfo
 from git_repo_jumper.domain.errors import (
-    ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError
+    ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError,
+    ConfiguredGitToolNotFoundError
 )
 from git_repo_jumper.services.repo_service import GitRepoService
 
@@ -260,6 +262,7 @@ class SelectCommand:
         return inquirer.fuzzy(  # type: ignore
             message=header_line,
             choices=choices,
+            qmark='',
             default='',
             max_height='90%',
             border=True,
@@ -267,38 +270,25 @@ class SelectCommand:
             match_exact=False,
             marker='❯',
             marker_pl=' ',
-            qmark='',
             style=get_style({
                 'question': 'bold', 'pointer': 'fg:#f4f4f4 bg:#522a37'
             }, style_override=False)
         ).execute()
 
-    # TODO: Refactor this method to separate concerns (e.g. storing path, printing details, opening tool)
     def _handle_selected_repo(self, selected_id: int) -> None:
         """
         Handles the selected repository by storing its path, printing its
         details and optionally opening the git tool.
         """
         repos = self._visible_repos
+        selected_path = repos[selected_id].path
 
-        if not repos:
-            return
-
-        if selected_id < 0 or selected_id >= len(repos):
+        if not repos or selected_id < 0 or selected_id >= len(repos):
             print_warning('Selection cancelled.')
             return
 
         # Store the selected repository path for use in the 'cd' command
-        try:
-            self._service.store_selected_repo_path(repos[selected_id].path)
-        except SelectedRepoPathSaveError as e:
-            print_error(str(e))
-            return
-        except Exception as e:
-            print_error(
-                f'Unexpected error while storing selected path: {str(e)}'
-            )
-            return
+        self._store_selected_repo_path(selected_path)
 
         # Get the name of the git tool to open, if not in cd-only mode
         git_tool_name = None
@@ -314,9 +304,26 @@ class SelectCommand:
         # Open the git tool if not in cd-only mode and a tool is configured
         if not self._cd_only and git_tool_name:
             try:
-                self._service.open_git_tool(repos[selected_id].path, git_tool_name)
+                self._service.open_git_tool(selected_path, git_tool_name)
+            except ConfiguredGitToolNotFoundError as e:
+                print_error(str(e))
+                sys.exit(1)
             except Exception as e:
-                print_error(f'Error opening git tool: {str(e)}')
+                print_error(f'Unexpected error while opening git tool: {str(e)}')
+                sys.exit(1)
+
+    def _store_selected_repo_path(self, path: str) -> None:
+        """Stores the selected repository path in a temporary file."""
+        try:
+            self._service.store_selected_repo_path(path)
+        except SelectedRepoPathSaveError as e:
+            print_error(str(e))
+            return
+        except Exception as e:
+            print_error(
+                f'Unexpected error while storing selected path: {str(e)}'
+            )
+            return
 
     @staticmethod
     def _print_selected_repo(

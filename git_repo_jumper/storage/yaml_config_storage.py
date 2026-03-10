@@ -42,7 +42,20 @@ class YamlConfigStorage(ConfigStorage):
         self._config_path = config_path
 
     def load_config(self) -> Config:
-        """Loads the config from the YAML file and returns a Config object."""
+        """
+        Loads the config from the YAML file and returns a Config object.
+
+        Raises:
+        -------
+        ConfigNotFoundError
+            If the config file is not found at the specified path.
+        ConfigParseError
+            If there is an error parsing the YAML file.
+
+        Returns:
+        --------
+        Config: The loaded configuration data.
+        """
         # Open YAML file
         try:
             with open(self._config_path, 'r') as f:
