@@ -19,11 +19,8 @@ class ColumnWidthsAdjuster:
     _column_config: dict[str, ColumnConfig]
     _available_width: int
     _calculated_widths: dict[str, int] = {}
-
     _total_min_width: int
     _width_budget: int
-
-
 
     @property
     def column_config(self) -> dict[str, ColumnConfig]:
@@ -50,58 +47,42 @@ class ColumnWidthsAdjuster:
 
     def get_calculated_widths(self) -> dict[str, int]:
         self._calculated_widths = {}
-
         self._total_min_width = self._calculate_total_min_width()
-        # print(total_min_width)
-
         self._width_budget = self.available_width - self._total_min_width
-        # print(width_budget)
-
-
 
         # List of columns sorted by shrink priority
         # (lowest value first = highest priority)
         columns_sorted_by_shrink_prio = sorted(
             self.column_config.values(),
-            key=lambda col: col.shrink_priority if col.shrink_priority is not None else float('inf')
+            key=lambda col: col.shrink_priority
+                if col.shrink_priority is not None else float('inf')
         )
 
         columns_sorted_by_stretch_prio = sorted(
             self.column_config.values(),
-            key=lambda col: col.stretch_priority if col.stretch_priority is not None else float('inf')
+            key=lambda col: col.stretch_priority
+                if col.stretch_priority is not None else float('inf')
         )
-
-
-
-        # print(columns_sorted_by_shrink_prio)
-        # print(columns_sorted_by_stretch_prio)
-
 
         # Shrink or stretch columns based on the width budget
         if self._width_budget < 0:
-            columns_sorted_by_prio = columns_sorted_by_shrink_prio
-            # self._calculated_widths = {}
-            self._adjust_columns(ColumnAdjustmentStrategy.SHRINK, columns_sorted_by_shrink_prio)
+            self._adjust_columns(
+                ColumnAdjustmentStrategy.SHRINK, columns_sorted_by_shrink_prio
+            )
         elif self._width_budget > 0:
-            columns_sorted_by_prio = columns_sorted_by_stretch_prio
-            # self._calculated_widths = {}
-            self._adjust_columns(ColumnAdjustmentStrategy.STRETCH, columns_sorted_by_stretch_prio)
+            self._adjust_columns(
+                ColumnAdjustmentStrategy.STRETCH, columns_sorted_by_stretch_prio
+            )
         else:
             for column_name, config in self.column_config.items():
                 self._calculated_widths[column_name] = config.min_width
 
-
         return self._calculated_widths
-
-
-
 
 
     def _add_names_to_column_config(self):
         for name, config in self.column_config.items():
             config.name = name
-
-
 
     def _calculate_total_min_width(self) -> int:
         total_width = 0
@@ -109,9 +90,11 @@ class ColumnWidthsAdjuster:
             total_width += config.min_width
         return total_width
 
-
-
-    def _adjust_columns(self, strategy: ColumnAdjustmentStrategy, columns_sorted_by_prio: list[ColumnConfig]):
+    def _adjust_columns(
+        self,
+        strategy: ColumnAdjustmentStrategy,
+        columns_sorted_by_prio: list[ColumnConfig]
+    ):
         if strategy == ColumnAdjustmentStrategy.SHRINK:
             do_shrink = True
         else:
@@ -223,4 +206,5 @@ if __name__ == '__main__':
             f'gitrep: {calculated_widths['github_repo_name']}'
 )
 
-        print(f'Available width = {adjuster.available_width} ==> {calculated_widths_str}')
+        print(f'Available width = {adjuster.available_width} ==> ' \
+              + calculated_widths_str)
