@@ -5,10 +5,10 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-![Logo](logo_dark_1.png)
+![Logo](images/logo_dark_1.png)
 
-![Screenshot](screenshots/screenshot_1.png)
-![Screenshot](screenshots/screenshot_2.png)
+![Screenshot](images/screenshot_1.png)
+![Screenshot](images/screenshot_2.png)
 
 ## ✨ Features
 
@@ -283,7 +283,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [InquirerPy](https://github.com/kazhala/InquirerPy) – Beautiful interactive prompts
 - [Rich](https://github.com/Textualize/rich) – Rich text and beautiful formatting in the terminal
-- [lazygit](https://github.com/jesseduffield/lazygit) – Amazing Git TUI that inspired this project
+- [lazygit](https://github.com/jesseduffield/lazygit) – Amazing Git TUI
 
 ## 💡 Tips
 
