@@ -123,7 +123,8 @@ class ColumnWidthsAdjuster:
 
             # Initialize widths at min_width for this priority group
             for col in columns_with_same_prio:
-                self._calculated_widths[col.name] = col.min_width
+                if col.name:
+                    self._calculated_widths[col.name] = col.min_width
 
             if self._width_budget == 0:
                 continue
@@ -145,6 +146,9 @@ class ColumnWidthsAdjuster:
                 distributed = 0
 
                 for j, col in enumerate(remaining_cols):
+                    if not col.name:
+                        continue
+
                     adjustment = per_col + (1 if j < extra_pixels else 0)
 
                     if do_shrink:
