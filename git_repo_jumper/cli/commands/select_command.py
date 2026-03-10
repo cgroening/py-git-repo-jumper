@@ -1,6 +1,5 @@
 # import pprint
 import sys
-import math
 from typing import Any
 from rich.console import Console
 from rich.table import Table
@@ -147,22 +146,70 @@ class SelectCommand:
 
     def _adjust_column_widths(self) -> None:
         """
-        Calculates the necessary column widths for the fuzzy finder based on
-        the longest values among the repositories. If the column widths in the
-        config are too small to fit the longest values, they are increased
-        based on the available console width and the priority of the columns.
+        Adjusts the column widths for the fuzzy finder based on the available
+        console width and the actual content lengths of the repositories.
 
-        The "Repository Name" and "GitHub Repo Name" columns have the highest
-        priority: Extra space is first allocated to them equally until they can
-        fit their longest values or the console width is reached.
-        Then the "Current Branch" column gets extra space and finally the
-        "Status" column.
+        Each column's max_width is derived from the longest value in the repo
+        data or the column header label, whichever is greater. The
+        ColumnWidthsAdjuster then distributes the available space starting from
+        each column's configured min_width, respecting stretch and shrink
+        priorities.
 
-        If the console width is too small to maintain the column width in the
-        config, the columns "Reository Name" and "GitHub Repo Name" are shrunk
-        equally until they fit.
+        If the console is wider than needed, extra space is allocated to
+        higher-priority columns first. If the console is too narrow, higher-
+        priority columns are shrunk first. The priorities for shrinking differ
+        from those for stretching.
         """
-        # Calculate the max width needed for each column based on the repo data
+        max_widths = self._calculate_max_column_widths()
+
+        # Fixed-width overhead: star prefix (2) + 3 separators ' │ ' (3 each)
+        # + fuzzy finder left padding (~5)
+        overhead = 2 + 3 * 3 + 5
+        col_widths = self._config.repo_selector_column_widths
+        available = console.width - col_widths.total() - overhead
+
+        column_headers = self._COLUMN_HEADERS
+        column_config = {
+            'name': ColumnConfig(
+                min_width=col_widths.name,
+                max_width=max(max_widths['name'], len(column_headers['name'])),
+                stretch_priority=1, shrink_priority=1,
+            ),
+            'github_repo_name': ColumnConfig(
+                min_width=col_widths.github_repo_name,
+                max_width=max(
+                    max_widths['github_repo_name'],
+                    len(column_headers['github_repo_name'])
+                ),
+                stretch_priority=1, shrink_priority=1,
+            ),
+            'branch': ColumnConfig(
+                min_width=col_widths.branch,
+                max_width=max(
+                    max_widths['branch'], len(column_headers['branch'])
+                ),
+                stretch_priority=2, shrink_priority=2,
+            ),
+            'status': ColumnConfig(
+                min_width=col_widths.status,
+                max_width=max(
+                    max_widths['status'], len(column_headers['status'])
+                ),
+                stretch_priority=3, shrink_priority=3,
+            ),
+        }
+
+        adjuster = ColumnWidthsAdjuster(column_config, available)
+        calculated = adjuster.get_calculated_widths()
+
+        # Update the column widths in the config with the calculated widths
+        for col_name, width in calculated.items():
+            setattr(col_widths, col_name, width)
+
+    def _calculate_max_column_widths(self) -> dict[str, int]:
+        """
+        Calculates the max width needed for each column based on the row data.
+        """
         max_widths: dict[str, int] = {
             'name': 0, 'github_repo_name': 0, 'branch': 0, 'status': 0
         }
@@ -177,110 +224,15 @@ class SelectCommand:
                     max_widths['github_repo_name'], len(git.github_repo_name)
                 )
             if git.branch:
-                max_widths['branch'] = max(max_widths['branch'], len(git.branch))
+                max_widths['branch'] = max(
+                    max_widths['branch'], len(git.branch)
+                )
             if git.status:
-                max_widths['status'] = max(max_widths['status'], len(git.status))
+                max_widths['status'] = max(
+                    max_widths['status'], len(git.status)
+                )
 
-        # Calculate available space
-        col_widths = self._config.repo_selector_column_widths
-
-        # Fixed-width overhead: star prefix (2) + 3 separators ' │ ' (3 each)
-        # + fuzzy finder left padding (~5)
-        overhead = 2 + 3 * 3 + 5
-        available = console.width - col_widths.total() - overhead
-
-        # # Not enough space: shrink name and github_repo_name equally
-        # if available < 0:
-        #     deficit = -available
-        #     shrink_each = math.ceil(deficit / 2)
-        #     col_widths.name = max(1, col_widths.name - shrink_each)
-        #     col_widths.github_repo_name = max(
-        #         1, col_widths.github_repo_name - (deficit - shrink_each)
-        #     )
-        #     return
-
-        # if available == 0:
-        #     return
-
-        # # Priority groups: equal-priority columns are grouped together
-        # priority_groups: list[list[str]] = [
-        #     ['name', 'github_repo_name'],
-        #     ['branch'],
-        #     ['status'],
-        # ]
-
-        # # Allocate extra space to columns based on priority until available
-        # # space is used up
-        # for group in priority_groups:
-        #     if available <= 0:
-        #         break
-
-        #     # Calculate how much extra width each column in the group needs
-        #     needs = {
-        #         col: max(0, max_widths[col] - getattr(col_widths, col))
-        #         for col in group
-        #     }
-        #     total_need = sum(needs.values())
-        #     if total_need == 0:
-        #         continue
-
-        #     # Don't allocate more than what's available or needed
-        #     budget = min(available, total_need)
-        #     gives: dict[str, int] = {col: 0 for col in group}
-        #     remaining = budget
-
-        #     # First pass: give each column an equal share, capped at its need
-        #     share = remaining / len(group)
-        #     for col in group:
-        #         gives[col] = min(needs[col], math.floor(share))
-        #         remaining -= gives[col]
-
-        #     # Second pass: distribute leftover to columns that still need more
-        #     # (e.g. when one column needed less than its share)
-        #     for col in group:
-        #         if remaining <= 0:
-        #             break
-        #         extra = min(needs[col] - gives[col], remaining)
-        #         gives[col] += extra
-        #         remaining -= extra
-
-        #     # Apply the calculated increases
-        #     for col in group:
-        #         setattr(col_widths, col, getattr(col_widths, col) + gives[col])
-
-        #     available -= (budget - remaining)
-
-
-
-        column_config = {
-            'name': ColumnConfig(
-                min_width=col_widths.name,
-                max_width=max(max_widths['name'], len(self._COLUMN_HEADERS['name'])),
-                stretch_priority=1, shrink_priority=1,
-            ),
-            'github_repo_name': ColumnConfig(
-                min_width=col_widths.github_repo_name,
-                max_width=max(max_widths['github_repo_name'], len(self._COLUMN_HEADERS['github_repo_name'])),
-                stretch_priority=1, shrink_priority=1,
-            ),
-            'branch': ColumnConfig(
-                min_width=col_widths.branch,
-                max_width=max(max_widths['branch'], len(self._COLUMN_HEADERS['branch'])),
-                stretch_priority=2, shrink_priority=2,
-            ),
-            'status': ColumnConfig(
-                min_width=col_widths.status,
-                max_width=max(max_widths['status'], len(self._COLUMN_HEADERS['status'])),
-                stretch_priority=3, shrink_priority=3,
-            ),
-        }
-
-        adjuster = ColumnWidthsAdjuster(column_config, available)
-        calculated = adjuster.get_calculated_widths()
-
-        # Ergebnisse zurückschreiben
-        for col_name, width in calculated.items():
-            setattr(col_widths, col_name, width)
+        return max_widths
 
     def _create_fuzzy_finder(self, choices: list[Choice]) -> Any:
         """
