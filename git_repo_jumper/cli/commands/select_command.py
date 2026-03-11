@@ -174,15 +174,7 @@ class SelectCommand:
             'name': ColumnConfig(
                 min_width=col_widths.name,
                 max_width=max(max_widths['name'], len(column_headers['name'])),
-                stretch_priority=1, shrink_priority=1,
-            ),
-            'github_repo_name': ColumnConfig(
-                min_width=col_widths.github_repo_name,
-                max_width=max(
-                    max_widths['github_repo_name'],
-                    len(column_headers['github_repo_name'])
-                ),
-                stretch_priority=1, shrink_priority=1,
+                stretch_priority=1, shrink_priority=4,
             ),
             'current_branch_name': ColumnConfig(
                 min_width=col_widths.current_branch_name,
@@ -198,6 +190,14 @@ class SelectCommand:
                     max_widths['status'], len(column_headers['status'])
                 ),
                 stretch_priority=3, shrink_priority=3,
+            ),
+            'github_repo_name': ColumnConfig(
+                min_width=col_widths.github_repo_name,
+                max_width=max(
+                    max_widths['github_repo_name'],
+                    len(column_headers['github_repo_name'])
+                ),
+                stretch_priority=1, shrink_priority=1,
             ),
         }
 

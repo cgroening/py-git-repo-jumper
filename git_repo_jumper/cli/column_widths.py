@@ -284,7 +284,7 @@ if __name__ == '__main__':
         'name': ColumnConfig(
             min_width=10, max_width=40, stretch_priority=1, shrink_priority=4
         ),
-        'branch': ColumnConfig(
+        'current_branch_name': ColumnConfig(
             min_width=5, max_width=20, stretch_priority=1, shrink_priority=2
         ),
         'status': ColumnConfig(
@@ -304,7 +304,7 @@ if __name__ == '__main__':
 
         calculated_widths_str = (
             f'name: {calculated_widths['name']}, '
-            f'branch: {calculated_widths['branch']}, '
+            f'branch: {calculated_widths['current_branch_name']}, '
             f'status: {calculated_widths['status']}, '
             f'gitrep: {calculated_widths['github_repo_name']}'
 )
