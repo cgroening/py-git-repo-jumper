@@ -1,5 +1,4 @@
 import subprocess
-import sys
 from pathlib import Path
 from git_repo_jumper.domain.errors import (
     SelectedRepoPathSaveError, ConfiguredGitToolNotFoundError

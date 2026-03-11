@@ -75,10 +75,13 @@ git-program: lazygit
 # Your GitHub username (optional - shortens remote repo names)
 github-username: yourusername
 
-# Column widths for the repository selector (fuzzy finder) - optional
+# Column widths for the repository selector (fuzzy finder).
+# The available width is first distributed to meet these minimum values.
+# If the content of a column exceeds its configured width, the column
+# is automatically expanded to fit if extra space is available.
 repo-selector-column-widths:
   name: 30
-  branch: 14
+  current_branch_name: 14
   status: 6
   github_repo_name: 20
 
