@@ -68,5 +68,6 @@ def recent():
 def config_path():
     ConfigPathCommand(_service).run()
 
+
 def main():
     app()
