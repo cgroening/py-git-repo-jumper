@@ -100,7 +100,9 @@ class YamlConfigStorage(ConfigStorage):
 
         return RepoSelectorColumnWidths(
             name=column_widths_raw.get('name', default_widths.name),
-            branch=column_widths_raw.get('branch', default_widths.branch),
+            current_branch_name=column_widths_raw.get(
+                'branch', default_widths.current_branch_name
+            ),
             status=column_widths_raw.get('status', default_widths.status),
             github_repo_name=column_widths_raw.get(
                 'github_repo_name', default_widths.github_repo_name

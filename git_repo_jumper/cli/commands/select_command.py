@@ -24,7 +24,7 @@ console = Console()
 class SelectCommand:
     _COLUMN_HEADERS: dict[str, str] = {
         'name': 'Repository Name',
-        'branch': 'Current Branch',
+        'current_branch_name': 'Current Branch',
         'status': 'Status',
         'github_repo_name': 'GitHub Repo Name',
     }
@@ -66,6 +66,7 @@ class SelectCommand:
             gittool = self._config.git_tool_name
             if gittool:
                 instructions += f' and open it in [magenta]{gittool}[/magenta].'
+
         instructions += (
             '\n\n[yellow]Use arrow keys to navigate, type to filter and '
             'press Enter to select.[/yellow]'
@@ -136,7 +137,7 @@ class SelectCommand:
 
         star = '★ ' if repo.fav else '  '
         name = str_fix(repo.name, col_widths.name)
-        branch = str_fix(git_info.branch or '-', col_widths.branch)
+        branch = str_fix(git_info.current_branch_name or '-', col_widths.current_branch_name)
         status = str_fix(git_info.status or '-', col_widths.status)
         github_repo_name = str_fix(
             git_info.github_repo_name or '-', col_widths.github_repo_name
@@ -183,10 +184,11 @@ class SelectCommand:
                 ),
                 stretch_priority=1, shrink_priority=1,
             ),
-            'branch': ColumnConfig(
-                min_width=col_widths.branch,
+            'current_branch_name': ColumnConfig(
+                min_width=col_widths.current_branch_name,
                 max_width=max(
-                    max_widths['branch'], len(column_headers['branch'])
+                    max_widths['current_branch_name'],
+                    len(column_headers['current_branch_name'])
                 ),
                 stretch_priority=2, shrink_priority=2,
             ),
@@ -211,7 +213,8 @@ class SelectCommand:
         Calculates the max width needed for each column based on the row data.
         """
         max_widths: dict[str, int] = {
-            'name': 0, 'github_repo_name': 0, 'branch': 0, 'status': 0
+            'name': 0, 'github_repo_name': 0, 'current_branch_name': 0,
+            'status': 0
         }
 
         for repo in self._visible_repos:
@@ -223,9 +226,9 @@ class SelectCommand:
                 max_widths['github_repo_name'] = max(
                     max_widths['github_repo_name'], len(git.github_repo_name)
                 )
-            if git.branch:
-                max_widths['branch'] = max(
-                    max_widths['branch'], len(git.branch)
+            if git.current_branch_name:
+                max_widths['current_branch_name'] = max(
+                    max_widths['current_branch_name'], len(git.current_branch_name)
                 )
             if git.status:
                 max_widths['status'] = max(
@@ -245,7 +248,9 @@ class SelectCommand:
 
         headers = self._COLUMN_HEADERS
         name = fix_str(headers['name'], col_widths.name)
-        branch = fix_str(headers['branch'], col_widths.branch)
+        branch = fix_str(
+            headers['current_branch_name'], col_widths.current_branch_name
+        )
         status = fix_str(headers['status'], col_widths.status)
         github_repo_name = headers['github_repo_name']
 

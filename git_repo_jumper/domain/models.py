@@ -46,7 +46,7 @@ class RepoSelectorColumnWidths:
     Maximum column widths for the repository selector UI (e.g. fuzzy finder).
     """
     name: int = 20
-    branch: int = 15
+    current_branch_name: int = 15
     status: int = 10
     github_repo_name: int = 20
 
@@ -67,7 +67,7 @@ class GitInfo:
         Whether the repository path is valid.
     error : str | None
         Error message if invalid, else None.
-    branch : str
+    current_branch_name : str
         Current branch name.
     status : str
         Status summary (clean, changes, ahead/behind).
@@ -78,7 +78,7 @@ class GitInfo:
     """
     valid: bool = False
     error: str | None = None
-    branch: str | None = None
+    current_branch_name: str | None = None
     status: str | None = None
     changes: int | None = None
     github_repo_name: str | None = None
@@ -86,4 +86,12 @@ class GitInfo:
     @property
     def github_repo_display(self) -> str:
         return self.github_repo_name or '-'
+
+    @staticmethod
+    def invalid(error: str) -> GitInfo:
+        """
+        Factory method to create an invalid `GitInfo` instance with an error
+        message.
+        """
+        return GitInfo(valid=False, error=error)
 

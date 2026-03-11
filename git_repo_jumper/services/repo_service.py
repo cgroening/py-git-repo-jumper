@@ -9,15 +9,34 @@ from git_repo_jumper.storage.config_storage import ConfigStorage
 
 
 class GitRepoService:
+    """
+    Service layer for managing and interacting with Git repositories.
+
+    Loads repository configurations via `ConfigStorage` and provides methods
+    to query git status, filter and sort repositories, open them in external
+    git tools and persist the last selected repository path for shell
+    integration.
+
+    Attributes:
+    -----------
+    _storage : ConfigStorage
+        Storage backend used to load the configuration.
+    _config : Config | None
+        Cached configuration object, loaded lazily on first access.
+    """
     _storage: ConfigStorage
-    _config: Config | None
+    _config: Config | None = None
 
 
     def __init__(self, storage: ConfigStorage):
+        """Saves the provided storage instance."""
         self._storage = storage
-        self._config = None
 
     def get_config(self) -> Config:
+        """
+        Returns the configuration object, loading it from storage if not already
+        cached.
+        """
         if self._config:
             return self._config
 
@@ -58,7 +77,6 @@ class GitRepoService:
 
         return repos
 
-    # TODO: Clean-up this method and split into smaller methods
     @staticmethod
     def get_git_status(
         repo_path: str, github_username: str | None, do_fetch: bool = False
@@ -76,111 +94,108 @@ class GitRepoService:
         Returns:
         --------
         GitStatus
-            A GitStatus object containing:
-            - valid (bool): Whether the path is a valid git repository.
-            - error (str | None): Error message if invalid, else None.
-            - branch (str): Current branch name.
-            - status (str): Status summary (clean, changes, ahead/behind).
-            - changes (int): Number of uncommitted changes.
-            - github_repo (str): GitHub repository name or '-'.
+            A GitStatus object containing `valid` (`bool`),
+            `error` (`str | None`), `branch` (`str`), `status (`str`),
+            `changes` (`int`) and `github_repo_name` (`str`).
         """
-
+        # Validate path and .git directory existence
         path = Path(repo_path).expanduser()
 
         if not path.exists():
-            return GitInfo(
-                valid=False,
-                error='Path does not exist',
-                branch='',
-                status='',
-                changes=0,
-                github_repo_name='-'
-            )
+           return GitInfo.invalid('Path does not exist')
 
         if not (path / '.git').exists():
-            return GitInfo(
-                valid=False,
-                error='Not a git repository',
-                branch='',
-                status='',
-                changes=0,
-                github_repo_name='-'
-            )
+           return GitInfo.invalid('Not a git repository')
 
+        # Get git information using subprocess calls
         try:
-            branch_result = subprocess.run(
-                ['git', '-C', str(path), 'rev-parse', '--abbrev-ref', 'HEAD'],
-                capture_output=True, text=True, timeout=5
+            GitRepoService._fetch_latest_changes(path, do_fetch)
+            current_branch_name = GitRepoService._get_current_branch_name(path)
+            status_text, changes = GitRepoService._generate_status_summary(path)
+            github_repo_name = GitRepoService.get_github_repo_name(
+                repo_path, github_username or ''
             )
-            branch = branch_result.stdout.strip() if branch_result.returncode == 0 else 'unknown'
-
-            if do_fetch:
-                try:
-                    subprocess.run(
-                        ['git', '-C', str(path), 'fetch', '--quiet'],
-                        capture_output=True,
-                        timeout=10,
-                    )
-                except subprocess.TimeoutExpired:
-                    pass
-
-            status_result = subprocess.run(
-                ['git', '-C', str(path), 'status', '--porcelain'],
-                capture_output=True, text=True, timeout=5
-            )
-            changes = len(status_result.stdout.strip().split('\n')) if status_result.stdout.strip() else 0
-
-            upstream_result = subprocess.run(
-                ['git', '-C', str(path), 'rev-list', '--count', '--left-right',
-                 '@{upstream}...HEAD'],
-                capture_output=True, text=True, timeout=5
-            )
-
-            behind, ahead = 0, 0
-            if upstream_result.returncode == 0:
-                parts = upstream_result.stdout.strip().split()
-                behind, ahead = int(parts[0]), int(parts[1])
-
-            status_parts = []
-            if changes > 0:
-                status_parts.append(f'≠{changes}')
-            if behind > 0:
-                status_parts.append(f'↓{behind}')
-            if ahead > 0:
-                status_parts.append(f'↑{ahead}')
-
-            status_text = ' '.join(status_parts) if status_parts else '✓'
-
-            github_repo = GitRepoService.get_github_repo_name(repo_path, github_username)
 
             return GitInfo(
                 valid=True,
                 error=None,
-                branch=branch,
+                current_branch_name=current_branch_name,
                 status=status_text,
                 changes=changes,
-                github_repo_name=github_repo
+                github_repo_name=github_repo_name
             )
 
         except subprocess.TimeoutExpired:
-            return GitInfo(
-                valid=False,
-                error='Timeout',
-                branch='',
-                status='',
-                changes=0,
-                github_repo_name='-'
-            )
+           return GitInfo.invalid('Timeout')
 
         except Exception as e:
-            return GitInfo(
-                valid=False,
-                error=str(e),
-                branch='',
-                status='',
-                changes=0,
-                github_repo_name='-'
+           return GitInfo.invalid(str(e))
+
+    @staticmethod
+    def _fetch_latest_changes(path: Path, do_fetch: bool) -> None:
+        """Fetch latest changes from remote to get ahead/behind status."""
+        if not do_fetch:
+            return
+
+        try:
+            subprocess.run(
+                ['git', '-C', str(path), 'fetch', '--quiet'],
+                capture_output=True,
+                timeout=10,
             )
+        except subprocess.TimeoutExpired:
+            pass
+
+    @staticmethod
+    def _get_current_branch_name(path: Path) -> str:
+        """
+        Return the current branch name of the git repository at the given path.
+        """
+        branch_result = subprocess.run(
+            ['git', '-C', str(path), 'rev-parse', '--abbrev-ref', 'HEAD'],
+            capture_output=True, text=True, timeout=5
+        )
+        return (
+            branch_result.stdout.strip()
+            if branch_result.returncode == 0 else '[unknown]'
+        )
+
+    @staticmethod
+    def _generate_status_summary(path: Path) -> tuple[str, int]:
+        """
+        Generates a status summary string and the number of changes for the
+        repository at the given path.
+        """
+        status_result = subprocess.run(
+            ['git', '-C', str(path), 'status', '--porcelain'],
+            capture_output=True, text=True, timeout=5
+        )
+        changes = (len(status_result.stdout.strip().split('\n'))
+                   if status_result.stdout.strip() else 0)
+
+        upstream_result = subprocess.run(
+            ['git', '-C', str(path), 'rev-list', '--count', '--left-right',
+             '@{upstream}...HEAD'],
+            capture_output=True, text=True, timeout=5
+        )
+
+        behind, ahead = 0, 0
+        if upstream_result.returncode == 0:
+            parts = upstream_result.stdout.strip().split()
+            behind, ahead = int(parts[0]), int(parts[1])
+
+        status_parts = []
+        if changes > 0:
+            status_parts.append(f'≠{changes}')
+        if behind > 0:
+            status_parts.append(f'↓{behind}')
+        if ahead > 0:
+            status_parts.append(f'↑{ahead}')
+
+        status_text = ' '.join(status_parts) if status_parts else '✓'
+
+
+        return status_text, changes
 
     @staticmethod
     def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
@@ -219,7 +234,6 @@ class GitRepoService:
             # Parse GitHub URL (both HTTPS and SSH formats)
             # HTTPS: https://github.com/user/repo.git
             # SSH: git@github.com:user/repo.git
-
             if "github.com" not in remote_url:
                 return "-"
 
