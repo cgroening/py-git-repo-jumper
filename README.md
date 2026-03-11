@@ -139,7 +139,7 @@ The package can also be run without installation from the project root:
 python -m git_repo_jumper
 ```
 
-### Command Line Options
+### Command Line Commands and Options
 
 ```zsh
 # Use a custom config file
@@ -154,6 +154,9 @@ rjump select --save-only
 # Fetch latest changes of remote repos
 rjump select -f
 rjump select --fetch
+
+# Show the path of the configuration file
+jump config-path
 ```
 
 ## 🐚 Shell Integration

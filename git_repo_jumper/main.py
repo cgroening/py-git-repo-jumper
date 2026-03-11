@@ -1,6 +1,7 @@
 import typer
 from pathlib import Path
 from git_repo_jumper.cli.commands.select_command import SelectCommand
+from git_repo_jumper.cli.commands.config_path_command import ConfigPathCommand
 from git_repo_jumper.services.repo_service import GitRepoService
 from git_repo_jumper.storage.yaml_config_storage import YamlConfigStorage
 
@@ -63,11 +64,9 @@ def recent():
     typer.echo('Command not implemented yet.')
 
 
-# TODO: Implement this (return path of the config file)
-@app.command()
-def config():
-    typer.echo('Command not implemented yet.')
-
+@app.command('config-path')
+def config_path():
+    ConfigPathCommand(_service).run()
 
 def main():
     app()
