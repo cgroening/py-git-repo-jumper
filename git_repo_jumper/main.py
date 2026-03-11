@@ -57,7 +57,7 @@ def select(
     SelectCommand(_service).run(cd_only=cd_only, do_fetch=do_fetch)
 
 
-# TODO: Implement this (open the recentl selected repo again)
+# TODO: Implement this (open the recently selected repo again)
 @app.command()
 def recent():
     typer.echo('Command not implemented yet.')
