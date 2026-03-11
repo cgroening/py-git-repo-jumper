@@ -80,7 +80,7 @@ class SelectCommand:
         allows the user to select one. Repos with non-existing paths are
         excluded and shown as a warning beforehand.
         """
-        all_repos = self._service.get_visible_repos_with_git_status(
+        all_repos = self._service._get_visible_repos_with_git_status(
             do_fetch=self._do_fetch
         )
         if not all_repos:
@@ -302,7 +302,7 @@ class SelectCommand:
         # Open the git tool if not in cd-only mode and a tool is configured
         if not self._cd_only and git_tool_name:
             try:
-                self._service.open_git_tool(selected_path, git_tool_name)
+                self._service._open_git_tool(selected_path, git_tool_name)
             except ConfiguredGitToolNotFoundError as e:
                 print_error(str(e))
                 sys.exit(1)
@@ -313,7 +313,7 @@ class SelectCommand:
     def _store_selected_repo_path(self, path: str) -> None:
         """Stores the selected repository path in a temporary file."""
         try:
-            self._service.store_selected_repo_path(path)
+            self._service._store_selected_repo_path(path)
         except SelectedRepoPathSaveError as e:
             print_error(str(e))
             return

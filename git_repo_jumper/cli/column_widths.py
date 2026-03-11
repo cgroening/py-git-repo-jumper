@@ -68,9 +68,6 @@ class ColumnWidthsAdjuster:
     _width_budget: int
     _calculated_widths: dict[str, int] = {}
 
-    @property
-    def column_config(self) -> dict[str, ColumnConfig]:
-        return self._column_config
 
     @property
     def available_width(self) -> int:
@@ -108,13 +105,13 @@ class ColumnWidthsAdjuster:
         # List of columns sorted by shrink/stretch priority
         # (lowest value first = highest priority)
         columns_sorted_by_shrink_prio = sorted(
-            self.column_config.values(),
+            self._column_config.values(),
             key=lambda col: col.shrink_priority
                 if col.shrink_priority is not None else float('inf')
         )
 
         columns_sorted_by_stretch_prio = sorted(
-            self.column_config.values(),
+            self._column_config.values(),
             key=lambda col: col.stretch_priority
                 if col.stretch_priority is not None else float('inf')
         )
@@ -129,7 +126,7 @@ class ColumnWidthsAdjuster:
                 ColumnAdjustmentStrategy.STRETCH, columns_sorted_by_stretch_prio
             )
         else:
-            for column_name, config in self.column_config.items():
+            for column_name, config in self._column_config.items():
                 self._calculated_widths[column_name] = config.min_width
 
         return self._calculated_widths
@@ -137,13 +134,13 @@ class ColumnWidthsAdjuster:
 
     def _add_names_to_column_config(self):
         """Writes each column's dict key into its ColumnConfig.name field."""
-        for name, config in self.column_config.items():
+        for name, config in self._column_config.items():
             config.name = name
 
     def _calculate_total_min_width(self) -> int:
         """Returns the sum of all columns' minimum widths."""
         total_width = 0
-        for config in self.column_config.values():
+        for config in self._column_config.values():
             total_width += config.min_width
         return total_width
 

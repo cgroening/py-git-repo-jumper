@@ -43,7 +43,7 @@ class GitRepoService:
         self._config = self._storage.load_config()
         return self._config
 
-    def get_visible_repos(self) -> list[Repo]:
+    def _get_visible_repos(self) -> list[Repo]:
         """
         Returns a list of repositories from the config file that are not
         marked as hidden (i.e. don't have `show: false`), sorted with
@@ -62,23 +62,23 @@ class GitRepoService:
 
         return visible_repos
 
-    def get_visible_repos_with_git_status(
+    def _get_visible_repos_with_git_status(
             self, do_fetch: bool = False
     ) -> list[Repo]:
         """
         Returns a list of all repos not configured with `show: false` and
         with git status information.
         """
-        repos = self.get_visible_repos()
+        repos = self._get_visible_repos()
         for repo in repos:
-            repo.git_info = self.get_git_status(
+            repo.git_info = self._get_git_status(
                 repo.path, self.get_config().github_username, do_fetch
             )
 
         return repos
 
     @staticmethod
-    def get_git_status(
+    def _get_git_status(
         repo_path: str, github_username: str | None, do_fetch: bool = False
     ) -> GitInfo:
         """
@@ -112,7 +112,7 @@ class GitRepoService:
             GitRepoService._fetch_latest_changes(path, do_fetch)
             current_branch_name = GitRepoService._get_current_branch_name(path)
             status_text, changes = GitRepoService._generate_status_summary(path)
-            github_repo_name = GitRepoService.get_github_repo_name(
+            github_repo_name = GitRepoService._get_github_repo_name(
                 repo_path, github_username or ''
             )
 
@@ -198,7 +198,7 @@ class GitRepoService:
         return status_text, changes
 
     @staticmethod
-    def get_github_repo_name(repo_path: str, github_username: str = "") -> str:
+    def _get_github_repo_name(repo_path: str, github_username: str = "") -> str:
         """
         Extracts the GitHub repository name from git remote URL.
 
@@ -258,7 +258,7 @@ class GitRepoService:
         except (subprocess.TimeoutExpired, Exception):
             return "-"
 
-    def store_selected_repo_path(self, repo_path: str) -> None:
+    def _store_selected_repo_path(self, repo_path: str) -> None:
         """
         Stores the path of the selected repository in a file named
         `selected-repo.txt` in the same directory as the config file.
@@ -286,7 +286,7 @@ class GitRepoService:
             raise SelectedRepoPathSaveError(str(selected_repo_path_file), str(e))
 
     @staticmethod
-    def open_git_tool(repo_path: str, git_program: str) -> None:
+    def _open_git_tool(repo_path: str, git_program: str) -> None:
         """
         Opens the repository in the specified git program.
 
