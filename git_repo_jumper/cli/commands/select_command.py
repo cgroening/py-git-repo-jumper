@@ -92,6 +92,7 @@ class SelectCommand:
         if not (visible_repos := self._get_visible_repos()):
             return
 
+        self._check_for_available_cache_data()
         self._warn_about_cache_usage()
         self._assort_invalid_repos(visible_repos)
 
@@ -105,6 +106,20 @@ class SelectCommand:
         # Show the fuzzy finder and get the selected repository index
         selected = self._create_fuzzy_finder(choices)
         self._handle_selected_repo(selected)
+
+    def _check_for_available_cache_data(self) -> None:
+        """
+        Checks if cached data are available when the self._use_cached_data flag
+        is set and prints a warning if not.
+        """
+        if self._service.cached_git_infos_available():
+            return
+
+        print_warning(
+            'No cached git status data available. Run without -d/--cached flag '
+            'to fetch new data.'
+        )
+
 
     def _get_visible_repos(self) -> list[Repo] | None:
         """
@@ -125,6 +140,9 @@ class SelectCommand:
         Prints a warning if cached data is being used, including the age of the
         cached data.
         """
+        if not self._service.cached_git_infos_available():
+            return
+
         date_of_cached_data = self._get_date_of_cached_data()
 
         if self._use_cached_data:

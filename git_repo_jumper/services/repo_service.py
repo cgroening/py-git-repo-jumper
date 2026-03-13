@@ -55,6 +55,26 @@ class GitRepoService:
         self._config = self._config_storage.load_config()
         return self._config
 
+    def cached_git_infos_available(self) -> bool:
+        """Checks if cached git status data are available and not empty."""
+        try:
+            git_info_storage_parent_path = self.get_config().config_path.parent
+            self._git_info_cache_storage.set_storage_parent_path(
+                git_info_storage_parent_path
+            )
+            git_info_cache = self._git_info_cache_storage.get_git_info()
+        except Exception:
+            return False
+
+        if not git_info_cache:
+            return False
+
+        date_cached_git_infos, cached_git_infos_dict = git_info_cache
+
+        if date_cached_git_infos and cached_git_infos_dict:
+            return True
+        return False
+
     def _get_visible_repos(self) -> list[Repo]:
         """
         Returns a list of repositories from the config file that are not
