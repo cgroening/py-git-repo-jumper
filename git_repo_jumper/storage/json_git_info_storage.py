@@ -5,7 +5,7 @@ from git_repo_jumper.domain.errors import GitInfoCacheError
 from git_repo_jumper.storage.git_info_storage import GitInfoStorage
 
 
-CACHE_FILE_NAME = 'git_info_cache.json'
+CACHE_FILE_NAME = 'git-info-cache.json'
 
 
 class JsonGitInfoStorage(GitInfoStorage):
