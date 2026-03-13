@@ -198,7 +198,7 @@ rj() {
 r() { rj "$@" }
 rs() { rj select -s "$@" }
 rf() { rj select -f "$@" }
-rdd() { rj select -d "$@" }
+rr() { rj select -c "$@" }
 ```
 
 Then reload your shell:
