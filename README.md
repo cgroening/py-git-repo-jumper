@@ -155,6 +155,10 @@ rjump select --save-only
 rjump select -f
 rjump select --fetch
 
+# Open with cached git info instead of fetching fresh info
+rjump select -d
+rjump select --cached
+
 # Show the path of the configuration file
 jump config-path
 ```
@@ -194,6 +198,7 @@ rj() {
 r() { rj "$@" }
 rs() { rj select -s "$@" }
 rf() { rj select -f "$@" }
+rdd() { rj select -d "$@" }
 ```
 
 Then reload your shell:
