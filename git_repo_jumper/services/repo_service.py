@@ -1,10 +1,13 @@
 import subprocess
 from pathlib import Path
+from datetime import datetime
 from git_repo_jumper.domain.errors import (
-    SelectedRepoPathSaveError, ConfiguredGitToolNotFoundError
+    SelectedRepoPathSaveError, ConfiguredGitToolNotFoundError,
+    GitInfoCacheError
 )
 from git_repo_jumper.domain.models import Config, GitInfo, Repo
 from git_repo_jumper.storage.config_storage import ConfigStorage
+from git_repo_jumper.storage.git_info_storage import GitInfoStorage
 
 
 class GitRepoService:
@@ -23,13 +26,23 @@ class GitRepoService:
     _config : Config | None
         Cached configuration object, loaded lazily on first access.
     """
-    _storage: ConfigStorage
+    _config_storage: ConfigStorage
+    _git_info_cache_storage: GitInfoStorage
     _config: Config | None = None
+    _date_cached_git_infos: str | None = None
 
 
-    def __init__(self, storage: ConfigStorage):
+    @property
+    def date_cached_git_infos(self) -> str | None:
+        return self._date_cached_git_infos
+
+
+    def __init__(
+        self, config_storage: ConfigStorage, git_info_storage: GitInfoStorage
+    ) -> None:
         """Saves the provided storage instance."""
-        self._storage = storage
+        self._config_storage = config_storage
+        self._git_info_cache_storage = git_info_storage
 
     def get_config(self) -> Config:
         """
@@ -39,7 +52,7 @@ class GitRepoService:
         if self._config:
             return self._config
 
-        self._config = self._storage.load_config()
+        self._config = self._config_storage.load_config()
         return self._config
 
     def _get_visible_repos(self) -> list[Repo]:
@@ -61,18 +74,77 @@ class GitRepoService:
 
         return visible_repos
 
-    def _get_visible_repos_with_git_status(
-            self, do_fetch: bool = False
+    def get_visible_repos_with_git_status(
+        self, do_fetch: bool = False, use_cached_data: bool = False
     ) -> list[Repo]:
         """
-        Returns a list of all repos not configured with `show: false` and
-        with git status information.
+        Returns a list of all repos not configured as hidden including git
+        status information if they coule be retrieved (from cache or by
+        running git).
         """
-        repos = self._get_visible_repos()
+        repos: list[Repo] = self._get_visible_repos()
+        git_info_storage_parent_path = self.get_config().config_path.parent
+        git_info_cache = None
+
+        # Get instance of GitInfoCacheStorage
+        try:
+            self._git_info_cache_storage.set_storage_parent_path(
+               git_info_storage_parent_path
+            )
+            git_info_cache = self._git_info_cache_storage.get_git_info()
+        except Exception as e:
+            raise GitInfoCacheError(git_info_storage_parent_path, str(e))
+
+        # Retrieve git status information from cache or by running git commands,
+        # depending on the `use_cached_data` flag and cache availability
+        if use_cached_data and git_info_cache:
+            self._add_cached_git_status_to_repos(repos, git_info_cache)
+        else:
+            repos = self._add_current_git_status_to_repos(repos, do_fetch)
+
+        return repos
+
+    def _add_cached_git_status_to_repos(
+        self,
+        repos: list[Repo],
+        git_info_cache:tuple[str | None, dict[str, GitInfo]]
+    ) -> list[Repo]:
+        """
+        Adds cached git status information to each repository in the given
+        list.
+        """
+        self._date_cached_git_infos, cached_git_infos_dict = git_info_cache
+
+        if not cached_git_infos_dict:
+            return repos
+
+        for repo in repos:
+            repo.git_info = cached_git_infos_dict.get(repo.path, None)
+
+        return repos
+
+    def _add_current_git_status_to_repos(
+            self, repos: list[Repo], do_fetch: bool = False
+    ) -> list[Repo]:
+        """
+        Adds the current git status information to each repository in the
+        given list.
+        """
+        git_infos: dict[str, GitInfo] = {}
         for repo in repos:
             repo.git_info = self._get_git_status(
                 repo.path, self.get_config().github_username, do_fetch
             )
+            git_infos[repo.path] = repo.git_info
+
+        # Save git infos in cache for optional later use
+        try:
+            self._git_info_cache_storage.save_git_info(
+                git_infos,
+                date_and_time_iso=datetime.now().astimezone().isoformat()
+            )
+        except Exception:
+            pass  # Don't handle because error is handled when reading cache
 
         return repos
 
@@ -257,7 +329,7 @@ class GitRepoService:
         except (subprocess.TimeoutExpired, Exception):
             return "-"
 
-    def _store_selected_repo_path(self, repo_path: str) -> None:
+    def store_selected_repo_path(self, repo_path: str) -> None:
         """
         Stores the path of the selected repository in a file named
         `selected-repo.txt` in the same directory as the config file.
@@ -285,7 +357,7 @@ class GitRepoService:
             raise SelectedRepoPathSaveError(str(selected_repo_path_file), str(e))
 
     @staticmethod
-    def _open_git_tool(repo_path: str, git_program: str) -> None:
+    def open_git_tool(repo_path: str, git_program: str) -> None:
         """
         Opens the repository in the specified git program.
 

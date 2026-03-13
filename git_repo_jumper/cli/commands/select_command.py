@@ -1,5 +1,6 @@
 # import pprint
 import sys
+from datetime import datetime
 from typing import Any
 from rich.console import Console
 from rich.table import Table
@@ -32,15 +33,23 @@ class SelectCommand:
     _service: GitRepoService
     _cd_only: bool
     _do_fetch: bool
+    _use_cached_data: bool
     _config: Config
     _visible_repos: list[Repo]
+
 
     def __init__(self, service: GitRepoService):
         self._service = service
 
-    def run(self, cd_only: bool = False, do_fetch: bool = False) -> None:
+    def run(
+        self,
+        cd_only: bool = False,
+        do_fetch: bool = False,
+        use_cached_data: bool = False
+    ) -> None:
         self._cd_only = cd_only
         self._do_fetch = do_fetch
+        self._use_cached_data = use_cached_data
 
         try:
             self._config = self._service.get_config()
@@ -80,17 +89,60 @@ class SelectCommand:
         allows the user to select one. Repos with non-existing paths are
         excluded and shown as a warning beforehand.
         """
-        all_repos = self._service._get_visible_repos_with_git_status(
-            do_fetch=self._do_fetch
-        )
-        if not all_repos:
-            print_error('No repositories found in config.')
+        if not (visible_repos := self._get_visible_repos()):
             return
 
-        # Separate repos with missing paths from valid ones
+        self._warn_about_cache_usage()
+        self._assort_invalid_repos(visible_repos)
+
+        # Format the repositories into choices for the fuzzy finder
+        self._adjust_column_widths()
+        choices: list[Choice] = [
+            Choice(value=i, name=self._format_fuzzy_finder_choice(repo))
+            for i, repo in enumerate(self._visible_repos)
+        ]
+
+        # Show the fuzzy finder and get the selected repository index
+        selected = self._create_fuzzy_finder(choices)
+        self._handle_selected_repo(selected)
+
+    def _get_visible_repos(self) -> list[Repo] | None:
+        """
+        Returns all repositories that are not configured to be hidden;
+        including git infos.
+        """
+        visible_repos = self._service.get_visible_repos_with_git_status(
+            do_fetch=self._do_fetch,
+            use_cached_data=self._use_cached_data
+        )
+        if not visible_repos:
+            print_error('No repositories found in config.')
+            return None
+        return visible_repos
+
+    def _warn_about_cache_usage(self) -> None:
+        """
+        Prints a warning if cached data is being used, including the age of the
+        cached data.
+        """
+        date_of_cached_data = self._get_date_of_cached_data()
+
+        if self._use_cached_data:
+            print_warning(
+                 'Using cached git status data from '
+                f'[magenta]{date_of_cached_data}[/magenta].\n'
+                 'These may be outdated, so the displayed status and branch '
+                 'information may not be accurate.'
+            )
+
+    def _assort_invalid_repos(self, visible_repos: list[Repo]) -> None:
+        """
+        Only saves repositories with valid paths to self._visible_repos and
+        prints a warning listing the repositories with invalid paths.
+        """
         repos_with_invalid_path: list[Repo] = []
         self._visible_repos = []
-        for repo in all_repos:
+        for repo in visible_repos:
             if repo.git_info and repo.git_info.error == 'Path does not exist':
                 repos_with_invalid_path.append(repo)
             else:
@@ -103,16 +155,30 @@ class SelectCommand:
             print_error('No repositories with valid paths found.')
             return
 
-        # Format the repositories into choices for the fuzzy finder
-        self._adjust_column_widths()
-        choices: list[Choice] = [
-            Choice(value=i, name=self._format_fuzzy_finder_choice(repo))
-            for i, repo in enumerate(self._visible_repos)
-        ]
+    def _get_date_of_cached_data(self) -> str:
+        """
+        Returns a human-readable string representing the date and age of the
+        cached git info data, or '[unknown]' if the date is not available.
+        """
+        if (date_iso := self._service.date_cached_git_infos):
+            try:
+                dt = datetime.fromisoformat(date_iso)
+                now = datetime.now().astimezone()
+                minutes_ago = int((now - dt).total_seconds() / 60)
 
-        # Show the fuzzy finder and get the selected repository index
-        selected = self._create_fuzzy_finder(choices)
-        self._handle_selected_repo(selected)
+                if minutes_ago < 60:
+                    ago = f'{minutes_ago} min ago'
+                elif minutes_ago < 1440:
+                    ago = f'{minutes_ago // 60} h ago'
+                else:
+                    ago = f'{minutes_ago // 1440} d ago'
+
+                formatted = dt.strftime('%Y-%m-%d - %H:%M h')
+                return f"{formatted} ({ago})"
+            except ValueError:
+                return '[invalid date]'
+        else:
+            return '[unknown]'
 
     @staticmethod
     def _print_missing_paths_warning(repos: list[Repo]) -> None:
@@ -302,7 +368,7 @@ class SelectCommand:
         # Open the git tool if not in cd-only mode and a tool is configured
         if not self._cd_only and git_tool_name:
             try:
-                self._service._open_git_tool(selected_path, git_tool_name)
+                self._service.open_git_tool(selected_path, git_tool_name)
             except ConfiguredGitToolNotFoundError as e:
                 print_error(str(e))
                 sys.exit(1)
@@ -313,7 +379,7 @@ class SelectCommand:
     def _store_selected_repo_path(self, path: str) -> None:
         """Stores the selected repository path in a temporary file."""
         try:
-            self._service._store_selected_repo_path(path)
+            self._service.store_selected_repo_path(path)
         except SelectedRepoPathSaveError as e:
             print_error(str(e))
             return

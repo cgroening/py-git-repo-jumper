@@ -50,9 +50,30 @@ class ConfiguredGitToolNotFoundError(Exception):
 
     def __init__(self, git_tool_name: str, e: str | None = None):
         self._git_tool_name = git_tool_name
+        self._error_message = e
 
     def __str__(self) -> str:
         if (e := self._error_message):
             return f'Error opening {self._git_tool_name}:\n\n{str(e)}'
         else:
             return f'Configured git tool not found: {self._git_tool_name}'
+
+
+class GitInfoCacheError(Exception):
+    """Raised when there is an error saving or loading git info from storage."""
+    _storage_path: Path
+    _error_message: str | None = None
+
+
+    def __init__(self, storage_path: Path, e: str | None = None):
+        self._storage_path = storage_path
+        self._error_message = e
+
+    def __str__(self) -> str:
+        if (e := self._error_message):
+            return (
+                'Error accessing git info cache at:\n'
+                f'{str(self._storage_path)}\n\n'
+                f'{str(e)}')
+        else:
+            return f'Error accessing git info cache at:\n{self._storage_path}'
