@@ -143,7 +143,7 @@ python -m git_repo_jumper
 
 ```zsh
 # Use a custom config file
-rjump -c ~/my-repos.yaml
+rjump -C ~/my-repos.yaml
 rjump --config ~/my-repos.yaml
 
 # Save path of selected repo to selected-repo.txt only
@@ -156,7 +156,7 @@ rjump select -f
 rjump select --fetch
 
 # Open with cached git info instead of fetching fresh info
-rjump select -d
+rjump select -c
 rjump select --cached
 
 # Show the path of the configuration file

@@ -21,7 +21,7 @@ def default(
     ctx: typer.Context,
     config: Path | None = typer.Option(
         None,
-        '-c', '--config',
+        '-C', '--config',
         help='Path to the config file. If not provided, the default is used.',
         exists=True,
         file_okay=True,
@@ -58,7 +58,7 @@ def select(
     ),
     use_cached_data: bool = typer.Option(
         False,
-        '-d', '--cached',
+        '-c', '--cached',
         help=(
             'Reads the git status information from the cache file instead of '
             'reading git status from each repository. This is useful when '
