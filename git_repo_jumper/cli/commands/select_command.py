@@ -116,7 +116,7 @@ class SelectCommand:
             return
 
         print_warning(
-            'No cached git status data available. Run without -d/--cached flag '
+            'No cached git status data available. Run without -c/--cached flag '
             'to fetch new data.'
         )
 
