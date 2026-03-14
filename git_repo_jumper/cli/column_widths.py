@@ -75,7 +75,14 @@ class ColumnWidthsAdjuster:
 
     @available_width.setter
     def available_width(self, value: int):
-        """Set the available width for columns, ensuring it's non-negative."""
+        """
+        Set the available width for columns, ensuring it's non-negative.
+
+        Raises:
+        -------
+        ValueError
+            If the available width is negative.
+        """
         if value < 0:
             raise ValueError('Available width cannot be negative.')
         self._available_width = value

@@ -18,7 +18,14 @@ class JsonGitInfoCache(BaseGitInfoCache):
     def set_storage_parent_path(
             self, storage_parent_path: Path | str | None
     ) -> None:
-        """Set the path to the configuration file if provided is not None."""
+        """
+        Sets the path to the configuration file if provided is not None.
+
+        Raises:
+        -------
+        GitInfoCacheError
+            If there is an error accessing the git info cache.
+        """
         if not storage_parent_path:
             return
 

@@ -78,6 +78,11 @@ class GitRepoService:
         Returns a list of all repos not configured as hidden including git
         status information if they coule be retrieved (from cache or by
         running git).
+
+        Raises:
+        -------
+        GitInfoCacheError
+            If there is an error accessing the git info cache.
         """
         repos: list[Repo] = self._get_visible_repos()
         git_info_storage_parent_path = self.get_config().config_path.parent
