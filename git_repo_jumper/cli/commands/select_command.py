@@ -14,7 +14,7 @@ from git_repo_jumper.cli.column_widths import ColumnConfig, ColumnWidthsAdjuster
 from git_repo_jumper.domain.models import Config, Repo, GitInfo
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError,
-    ConfiguredGitToolNotFoundError
+    ConfiguredGitToolNotFoundError, GitInfoCacheError
 )
 from git_repo_jumper.services.repo_service import GitRepoService
 
@@ -128,10 +128,18 @@ class SelectCommand:
         Returns all repositories that are not configured to be hidden;
         including git infos.
         """
-        visible_repos = self._service.get_visible_repos_with_git_status(
-            do_fetch=self._do_fetch,
-            use_cached_data=self._use_cached_data
-        )
+        try:
+            visible_repos = self._service.get_visible_repos_with_git_status(
+                do_fetch=self._do_fetch,
+                use_cached_data=self._use_cached_data
+            )
+        except GitInfoCacheError as e:
+            print_error(str(e))
+            return None
+        except Exception as e:
+            print_error(f'Unexpected error while retrieving repositories: {str(e)}')
+            return None
+
         if not visible_repos:
             print_error('No repositories found in config.')
             return None
