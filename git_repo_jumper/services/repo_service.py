@@ -4,7 +4,7 @@ from git_repo_jumper.domain.errors import (
 )
 from git_repo_jumper.domain.models import Config, GitInfo, Repo
 from git_repo_jumper.storage.config_storage import ConfigStorage
-from git_repo_jumper.storage.git_client import GitClient
+from git_repo_jumper.storage.git_client_base import GitClientBase
 from git_repo_jumper.storage.git_info_storage import GitInfoStorage
 
 
@@ -18,7 +18,7 @@ class GitRepoService:
     integration.
     """
     _config_storage: ConfigStorage
-    _git_client: GitClient
+    _git_client: GitClientBase
     _git_info_cache_storage: GitInfoStorage
     _config: Config | None = None
     _date_cached_git_infos: str | None = None
@@ -32,7 +32,7 @@ class GitRepoService:
     def __init__(
         self,
         config_storage: ConfigStorage,
-        git_cient: GitClient,
+        git_cient: GitClientBase,
         git_info_storage: GitInfoStorage,
     ) -> None:
         """Saves the provided storage instance."""
