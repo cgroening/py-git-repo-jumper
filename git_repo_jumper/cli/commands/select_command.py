@@ -363,11 +363,13 @@ class SelectCommand:
         details and optionally opening the git tool.
         """
         repos = self._visible_repos
-        selected_path = repos[selected_id].path
 
-        if not repos or selected_id < 0 or selected_id >= len(repos):
+        if not repos or selected_id is None or \
+            selected_id < 0 or selected_id >= len(repos):
             print_warning('Selection cancelled.')
             return
+
+        selected_path = repos[selected_id].path
 
         # Store the selected repository path for use in the 'cd' command
         self._store_selected_repo_path(selected_path)
