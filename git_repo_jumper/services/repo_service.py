@@ -16,15 +16,9 @@ class GitRepoService:
     to query git status, filter and sort repositories, open them in external
     git tools and persist the last selected repository path for shell
     integration.
-
-    Attributes:
-    -----------
-    _storage : ConfigStorage
-        Storage backend used to load the configuration.
-    _config : Config | None
-        Cached configuration object, loaded lazily on first access.
     """
     _config_storage: ConfigStorage
+    _git_client: GitClient
     _git_info_cache_storage: GitInfoStorage
     _config: Config | None = None
     _date_cached_git_infos: str | None = None
@@ -36,10 +30,14 @@ class GitRepoService:
 
 
     def __init__(
-        self, config_storage: ConfigStorage, git_info_storage: GitInfoStorage
+        self,
+        config_storage: ConfigStorage,
+        git_cient: GitClient,
+        git_info_storage: GitInfoStorage,
     ) -> None:
         """Saves the provided storage instance."""
         self._config_storage = config_storage
+        self._git_client = git_cient
         self._git_info_cache_storage = git_info_storage
 
     def get_config(self) -> Config:
@@ -130,6 +128,10 @@ class GitRepoService:
         except Exception as e:
             raise SelectedRepoPathSaveError(str(selected_repo_path_file), str(e))
 
+    def open_git_tool(self, repo_path: str, git_program: str) -> None:
+        """Opens the specified repository in the configured git program."""
+        self._git_client.open_git_tool(repo_path, git_program)
+
     def _get_visible_repos(self) -> list[Repo]:
         """
         Returns a list of repositories from the config file that are not
@@ -177,7 +179,7 @@ class GitRepoService:
         """
         git_infos: dict[str, GitInfo] = {}
         for repo in repos:
-            repo.git_info = GitClient.get_git_status(
+            repo.git_info = self._git_client.get_git_status(
                 repo.path, self.get_config().github_username, do_fetch
             )
             git_infos[repo.path] = repo.git_info
