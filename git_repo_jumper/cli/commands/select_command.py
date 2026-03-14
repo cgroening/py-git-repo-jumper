@@ -112,6 +112,8 @@ class SelectCommand:
         Checks if cached data are available when the self._use_cached_data flag
         is set and prints a warning if not.
         """
+        if not self._use_cached_data:
+            return
         if self._service.cached_git_infos_available():
             return
 
