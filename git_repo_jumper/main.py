@@ -75,12 +75,6 @@ def select(
     )
 
 
-# TODO: Implement this (open the recently selected repo again)
-@app.command()
-def recent():
-    typer.echo('Command not implemented yet.')
-
-
 @app.command('config-path')
 def config_path():
     ConfigPathCommand(_service).run()
