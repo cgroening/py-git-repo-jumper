@@ -16,7 +16,7 @@ from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError,
     ConfiguredGitToolNotFoundError, GitInfoCacheError
 )
-from git_repo_jumper.services.repo_service import GitRepoService
+from git_repo_jumper.services.repository import GitRepoService
 
 
 console = Console()

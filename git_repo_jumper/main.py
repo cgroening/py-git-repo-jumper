@@ -1,8 +1,8 @@
 import typer
 from pathlib import Path
-from git_repo_jumper.cli.commands.select_command import SelectCommand
-from git_repo_jumper.cli.commands.config_path_command import ConfigPathCommand
-from git_repo_jumper.services.repo_service import GitRepoService
+from git_repo_jumper.cli.commands.select import SelectCommand
+from git_repo_jumper.cli.commands.config_path import ConfigPathCommand
+from git_repo_jumper.services.repository import GitRepoService
 from git_repo_jumper.storage.config.yaml_config_storage import YamlConfigStorage
 from git_repo_jumper.storage.git_client.subprocess import SubprocessGitClient
 from git_repo_jumper.storage.git_info_cache.json import JsonGitInfoCache

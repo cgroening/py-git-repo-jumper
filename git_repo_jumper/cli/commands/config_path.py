@@ -6,7 +6,7 @@ from git_repo_jumper.domain.models import Config
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError
 )
-from git_repo_jumper.services.repo_service import GitRepoService
+from git_repo_jumper.services.repository import GitRepoService
 
 
 class ConfigPathCommand:
