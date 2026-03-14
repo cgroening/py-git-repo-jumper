@@ -32,12 +32,12 @@ class GitRepoService:
     def __init__(
         self,
         config_storage: ConfigStorage,
-        git_cient: GitClientBase,
+        git_client: GitClientBase,
         git_info_storage: GitInfoStorage,
     ) -> None:
         """Saves the provided storage instance."""
         self._config_storage = config_storage
-        self._git_client = git_cient
+        self._git_client = git_client
         self._git_info_cache_storage = git_info_storage
 
     def get_config(self) -> Config:
