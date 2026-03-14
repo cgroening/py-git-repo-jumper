@@ -2,13 +2,13 @@ import yaml
 from pathlib import Path
 from git_repo_jumper.domain.models import Config, Repo, RepoSelectorColumnWidths
 from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
-from git_repo_jumper.storage.config_storage import ConfigStorage
+from git_repo_jumper.storage.config.config_storage import BaseConfigStorage
 
 
 DEFAULT_CONFIG_PATH = Path.home() / '.config' / 'git-repo-jumper' / 'config.yaml'
 
 
-class YamlConfigStorage(ConfigStorage):
+class YamlConfigStorage(BaseConfigStorage):
     """
     Storage class for loading config from a YAML file.
     Implements the ConfigStorage interface.

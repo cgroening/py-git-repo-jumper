@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from git_repo_jumper.domain.models import Config
 
 
-class ConfigStorage(ABC):
+class BaseConfigStorage(ABC):
     """Interface for loading configuration data for git-repo-jumper."""
 
     _config_path: Path

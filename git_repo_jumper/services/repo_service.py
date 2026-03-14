@@ -3,7 +3,7 @@ from git_repo_jumper.domain.errors import (
     SelectedRepoPathSaveError, GitInfoCacheError
 )
 from git_repo_jumper.domain.models import Config, GitInfo, Repo
-from git_repo_jumper.storage.config_storage import ConfigStorage
+from git_repo_jumper.storage.config.config_storage import BaseConfigStorage
 from git_repo_jumper.storage.git_client.base import BaseGitClient
 from git_repo_jumper.storage.git_info_cache.base import BaseGitInfoCache
 
@@ -17,7 +17,7 @@ class GitRepoService:
     git tools and persist the last selected repository path for shell
     integration.
     """
-    _config_storage: ConfigStorage
+    _config_storage: BaseConfigStorage
     _git_client: BaseGitClient
     _git_info_cache_storage: BaseGitInfoCache
     _config: Config | None = None
@@ -31,7 +31,7 @@ class GitRepoService:
 
     def __init__(
         self,
-        config_storage: ConfigStorage,
+        config_storage: BaseConfigStorage,
         git_client: BaseGitClient,
         git_info_storage: BaseGitInfoCache,
     ) -> None:
