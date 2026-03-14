@@ -357,7 +357,7 @@ class SelectCommand:
             }, style_override=False)
         ).execute()
 
-    def _handle_selected_repo(self, selected_id: int) -> None:
+    def _handle_selected_repo(self, selected_id: int | None) -> None:
         """
         Handles the selected repository by storing its path, printing its
         details and optionally opening the git tool.
