@@ -2,15 +2,15 @@ import subprocess
 from pathlib import Path
 from git_repo_jumper.domain.models import GitInfo
 from git_repo_jumper.domain.errors import ConfiguredGitToolNotFoundError
+from git_repo_jumper.storage.git_client_base import GitClientBase
 
 
-class GitClient:
+class GitClient(GitClientBase):
     """Adapter to the Git CLI. Executes git commands via subprocess."""
 
 
-    @staticmethod
     def get_git_status(
-        repo_path: str, github_username: str | None, do_fetch: bool = False
+        self, repo_path: str, github_username: str | None, do_fetch: bool = False
     ) -> GitInfo:
         """
         Determines the git status of a repository.
@@ -63,8 +63,7 @@ class GitClient:
            return GitInfo.invalid(str(e))
 
 
-    @staticmethod
-    def open_git_tool(repo_path: str, git_program: str) -> None:
+    def open_git_tool(self, repo_path: str, git_program: str) -> None:
         """
         Opens the repository in the specified git program.
 
