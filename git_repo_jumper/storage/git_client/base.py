@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from git_repo_jumper.domain.models import GitInfo
 
 
-class GitClientBase(ABC):
+class BaseGitClient(ABC):
     @abstractmethod
     def get_git_status(
         self, repo_path: str, github_username: str | None, do_fetch: bool = False

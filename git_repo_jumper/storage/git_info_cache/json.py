@@ -2,13 +2,13 @@ import json
 from pathlib import Path
 from git_repo_jumper.domain.models import GitInfo
 from git_repo_jumper.domain.errors import GitInfoCacheError
-from git_repo_jumper.storage.git_info_storage import GitInfoStorage
+from git_repo_jumper.storage.git_info_cache.base import BaseGitInfoCache
 
 
 CACHE_FILE_NAME = 'git-info-cache.json'
 
 
-class JsonGitInfoStorage(GitInfoStorage):
+class JsonGitInfoCache(BaseGitInfoCache):
     _storage_path: Path
 
 

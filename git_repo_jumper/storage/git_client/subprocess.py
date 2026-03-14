@@ -2,10 +2,10 @@ import subprocess
 from pathlib import Path
 from git_repo_jumper.domain.models import GitInfo
 from git_repo_jumper.domain.errors import ConfiguredGitToolNotFoundError
-from git_repo_jumper.storage.git_client_base import GitClientBase
+from git_repo_jumper.storage.git_client.base import BaseGitClient
 
 
-class GitClient(GitClientBase):
+class SubprocessGitClient(BaseGitClient):
     """Adapter to the Git CLI. Executes git commands via subprocess."""
 
 
@@ -40,10 +40,10 @@ class GitClient(GitClientBase):
 
         # Get git information using subprocess calls
         try:
-            GitClient._fetch_latest_changes(path, do_fetch)
-            current_branch_name = GitClient._get_current_branch_name(path)
-            status_text, changes = GitClient._generate_status_summary(path)
-            github_repo_name = GitClient._get_github_repo_name(
+            SubprocessGitClient._fetch_latest_changes(path, do_fetch)
+            current_branch_name = SubprocessGitClient._get_current_branch_name(path)
+            status_text, changes = SubprocessGitClient._generate_status_summary(path)
+            github_repo_name = SubprocessGitClient._get_github_repo_name(
                 repo_path, github_username or ''
             )
 

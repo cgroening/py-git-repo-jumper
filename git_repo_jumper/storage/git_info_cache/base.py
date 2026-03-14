@@ -3,7 +3,7 @@ from pathlib import Path
 from git_repo_jumper.domain.models import GitInfo
 
 
-class GitInfoStorage(ABC):
+class BaseGitInfoCache(ABC):
     """
     Interface for caching and retrieving Git status information for
     Git repositories.
