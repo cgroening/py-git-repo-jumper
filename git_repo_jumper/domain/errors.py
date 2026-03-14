@@ -8,6 +8,7 @@ class ConfigNotFoundError(Exception):
 
     def __init__(self, config_path: Path):
         self._config_path = config_path
+        super().__init__(str(self))
 
     def __str__(self) -> str:
         return f'Configuration file not found:\n{str(self._config_path)}'
@@ -22,6 +23,7 @@ class ConfigParseError(Exception):
     def __init__(self, config_path: Path, error_message: str):
         self._config_path = config_path
         self._error_message = error_message
+        super().__init__(str(self))
 
     def __str__(self) -> str:
         return f'Error parsing YAML file:\n{str(self._config_path)}\n\n' \
@@ -37,6 +39,7 @@ class SelectedRepoPathSaveError(Exception):
     def __init__(self, _selected_repo_path_file: str, error_message: str):
         self._selected_repo_path_file = _selected_repo_path_file
         self._error_message = error_message
+        super().__init__(str(self))
 
     def __str__(self) -> str:
         return ('Error saving selected repo path in:\n'
@@ -51,6 +54,7 @@ class ConfiguredGitToolNotFoundError(Exception):
     def __init__(self, git_tool_name: str, e: str | None = None):
         self._git_tool_name = git_tool_name
         self._error_message = e
+        super().__init__(str(self))
 
     def __str__(self) -> str:
         if (e := self._error_message):
@@ -68,6 +72,7 @@ class GitInfoCacheError(Exception):
     def __init__(self, storage_path: Path, e: str | None = None):
         self._storage_path = storage_path
         self._error_message = e
+        super().__init__(str(self))
 
     def __str__(self) -> str:
         if (e := self._error_message):
