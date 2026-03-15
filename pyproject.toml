@@ -30,7 +30,7 @@ exclude = [
 rjump = "git_repo_jumper.main:main"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["git_repo_jumper/tests"]
 
 [tool.mypy]
 check_untyped_defs = true
