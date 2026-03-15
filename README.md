@@ -16,6 +16,7 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
 - 📊 **Table Display** – Clean table-like interface showing name, branch, status, GitHub repo and path
 - 🎨 **Beautiful UI** – Rich-styled panels and headers with color-coded information
 - ⚡ **Git Status** – Real-time status showing clean repos, changes and upstream differences (↓↑)
+- ⏳ **Progress Bar** – Animated progress bar while loading git status of the repositories
 - 🐙 **GitHub Integration** – Automatically extracts and displays GitHub repository names
 - 🚨 **Error Handling** – Invalid repositories shown in a red panel before selection
 - 📂 **Auto-naming** – Uses folder names if no explicit name is provided
