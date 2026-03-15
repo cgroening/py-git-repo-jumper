@@ -16,45 +16,50 @@ def make_config():
 
 
 class TestConfigPathCommandRun:
+    def setup_method(self):
+        self.service = MagicMock()
+        self.command = ConfigPathCommand(self.service)
+
     def test_displays_config_path_on_success(self):
-        service = MagicMock()
-        service.get_config.return_value = make_config()
-        command = ConfigPathCommand(service)
+        self.service.get_config.return_value = make_config()
+
         with patch(
             'git_repo_jumper.cli.commands.config_path.print_custom_panel'
         ) as mock_panel:
-            command.run()
+            self.command.run()
             mock_panel.assert_called_once()
             assert '/fake/config.yaml' in str(mock_panel.call_args)
 
     def test_prints_error_on_config_not_found(self):
-        service = MagicMock()
-        service.get_config.side_effect = ConfigNotFoundError(Path('/missing.yaml'))
-        command = ConfigPathCommand(service)
+        """
+        Test that the command prints an error message  `ConfigNotFoundError`
+        is raised. The specified path in this test is irrelevant because the
+        focus is on the error handling.
+        """
+        self.service.get_config.side_effect = ConfigNotFoundError(Path('/'))
+
         with patch(
             'git_repo_jumper.cli.commands.config_path.print_error'
         ) as mock_error:
-            command.run()
+            self.command.run()
             mock_error.assert_called_once()
 
     def test_prints_error_on_config_parse_error(self):
-        service = MagicMock()
-        service.get_config.side_effect = ConfigParseError(Path('/bad.yaml'), 'syntax error')
-        command = ConfigPathCommand(service)
+        self.service.get_config.side_effect = ConfigParseError(
+            Path('/'), 'syntax error'
+        )
         with patch(
             'git_repo_jumper.cli.commands.config_path.print_error'
         ) as mock_error:
-            command.run()
+            self.command.run()
             mock_error.assert_called_once()
 
     def test_prints_error_on_unexpected_exception(self):
-        service = MagicMock()
-        service.get_config.side_effect = RuntimeError('unexpected')
-        command = ConfigPathCommand(service)
+        self.service.get_config.side_effect = RuntimeError('unexpected')
         with patch(
             'git_repo_jumper.cli.commands.config_path.print_error'
         ) as mock_error:
-            command.run()
+            self.command.run()
             mock_error.assert_called_once()
 
 
