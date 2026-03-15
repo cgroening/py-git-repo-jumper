@@ -1,9 +1,13 @@
+import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
-import pytest
 from git_repo_jumper.services.repository import GitRepoService
-from git_repo_jumper.domain.models import Config, Repo, GitInfo, RepoSelectorColumnWidths
-from git_repo_jumper.domain.errors import SelectedRepoPathSaveError, GitInfoCacheError
+from git_repo_jumper.domain.models import (
+    Config, Repo, GitInfo, RepoSelectorColumnWidths
+)
+from git_repo_jumper.domain.errors import (
+    SelectedRepoPathSaveError, GitInfoCacheError
+)
 
 
 def make_config(repos=None):
@@ -172,7 +176,9 @@ class TestGetVisibleReposWithGitStatus:
     def test_fetches_live_data_when_flag_not_set(self):
         repo = Repo(name='r', path='/repo')
         live_info = GitInfo(valid=True, current_branch_name='dev')
-        service, _, git_client, git_info_storage = make_service(make_config([repo]))
+        service, _, git_client, git_info_storage = make_service(
+            make_config([repo])
+        )
         git_info_storage.get_git_info.return_value = None
         git_client.get_git_status.return_value = live_info
         result = service.get_visible_repos_with_git_status(use_cached_data=False)

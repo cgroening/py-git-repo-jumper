@@ -18,7 +18,9 @@ def make_adjuster(available_width: int) -> ColumnWidthsAdjuster:
             min_width=5, max_width=30, stretch_priority=1, shrink_priority=1
         ),
     }
-    return ColumnWidthsAdjuster(column_config=config, available_width=available_width)
+    return ColumnWidthsAdjuster(
+        column_config=config, available_width=available_width
+    )
 
 
 class TestColumnWidthsAdjuster:

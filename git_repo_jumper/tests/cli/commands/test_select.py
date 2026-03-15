@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
 from pathlib import Path
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
-import pytest
 from git_repo_jumper.cli.commands.select import SelectCommand
-from git_repo_jumper.domain.models import Config, Repo, GitInfo, RepoSelectorColumnWidths
+from git_repo_jumper.domain.models import (
+    Config, Repo, GitInfo, RepoSelectorColumnWidths
+)
 from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
 
 
@@ -18,7 +19,7 @@ def make_config(**kwargs):
         repos=[],
     )
     defaults.update(kwargs)
-    return Config(**defaults)
+    return Config(**defaults)  # type: ignore
 
 
 def make_command(config=None):
@@ -107,8 +108,16 @@ class TestCalculateMaxColumnWidths:
     def test_returns_max_name_length(self):
         command, _ = make_command()
         command._visible_repos = [
-            Repo(name='short', path='/a', git_info=GitInfo(valid=True)),
-            Repo(name='a-much-longer-name', path='/b', git_info=GitInfo(valid=True)),
+            Repo(
+                name='short',
+                path='/a',
+                git_info=GitInfo(valid=True)
+            ),
+            Repo(
+                name='a-much-longer-name',
+                path='/b',
+                git_info=GitInfo(valid=True)
+            ),
         ]
         widths = command._calculate_max_column_widths()
         assert widths['name'] == len('a-much-longer-name')
@@ -126,7 +135,7 @@ class TestCalculateMaxColumnWidths:
                     valid=True, current_branch_name='feature/very-long-branch'
                 ),
             ),
-        ]
+]
         widths = command._calculate_max_column_widths()
         assert widths['current_branch_name'] == len('feature/very-long-branch')
 
@@ -152,21 +161,27 @@ class TestGetDateOfCachedData:
 
     def test_shows_minutes_ago_for_recent_cache(self):
         command, service = make_command()
-        five_min_ago = (datetime.now().astimezone() - timedelta(minutes=5)).isoformat()
+        five_min_ago = (
+            datetime.now().astimezone() - timedelta(minutes=5)
+        ).isoformat()
         service.date_cached_git_infos = five_min_ago
         result = command._get_date_of_cached_data()
         assert 'min ago' in result
 
     def test_shows_hours_ago_for_older_cache(self):
         command, service = make_command()
-        two_hours_ago = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
+        two_hours_ago = (
+            datetime.now().astimezone() - timedelta(hours=2)
+        ).isoformat()
         service.date_cached_git_infos = two_hours_ago
         result = command._get_date_of_cached_data()
         assert 'h ago' in result
 
     def test_shows_days_ago_for_old_cache(self):
         command, service = make_command()
-        three_days_ago = (datetime.now().astimezone() - timedelta(days=3)).isoformat()
+        three_days_ago = (
+            datetime.now().astimezone() - timedelta(days=3)
+        ).isoformat()
         service.date_cached_git_infos = three_days_ago
         result = command._get_date_of_cached_data()
         assert 'd ago' in result
@@ -177,7 +192,9 @@ class TestHandleSelectedRepo:
         command, _ = make_command()
         command._visible_repos = [Repo(name='r', path='/p')]
         command._cd_only = False
-        with patch('git_repo_jumper.cli.commands.select.print_warning') as mock_warn:
+        with patch(
+            'git_repo_jumper.cli.commands.select.print_warning'
+        ) as mock_warn:
             command._handle_selected_repo(None)
         mock_warn.assert_called_once()
 
@@ -185,7 +202,9 @@ class TestHandleSelectedRepo:
         command, _ = make_command()
         command._visible_repos = [Repo(name='r', path='/p')]
         command._cd_only = False
-        with patch('git_repo_jumper.cli.commands.select.print_warning') as mock_warn:
+        with patch(
+            'git_repo_jumper.cli.commands.select.print_warning'
+        ) as mock_warn:
             command._handle_selected_repo(99)
         mock_warn.assert_called_once()
 
@@ -193,7 +212,9 @@ class TestHandleSelectedRepo:
         command, _ = make_command()
         command._visible_repos = [Repo(name='r', path='/p')]
         command._cd_only = False
-        with patch('git_repo_jumper.cli.commands.select.print_warning') as mock_warn:
+        with patch(
+            'git_repo_jumper.cli.commands.select.print_warning'
+        ) as mock_warn:
             command._handle_selected_repo(-1)
         mock_warn.assert_called_once()
 
@@ -201,17 +222,25 @@ class TestHandleSelectedRepo:
 class TestRunErrorHandling:
     def test_prints_error_on_config_not_found(self):
         service = MagicMock()
-        service.get_config.side_effect = ConfigNotFoundError(Path('/missing.yaml'))
+        service.get_config.side_effect = ConfigNotFoundError(
+            Path('/missing.yaml')
+        )
         command = SelectCommand(service)
-        with patch('git_repo_jumper.cli.commands.select.print_error') as mock_error:
+        with patch(
+            'git_repo_jumper.cli.commands.select.print_error'
+        ) as mock_error:
             command.run()
         mock_error.assert_called_once()
 
     def test_prints_error_on_config_parse_error(self):
         service = MagicMock()
-        service.get_config.side_effect = ConfigParseError(Path('/bad.yaml'), 'bad syntax')
+        service.get_config.side_effect = ConfigParseError(
+            Path('/bad.yaml'), 'bad syntax'
+        )
         command = SelectCommand(service)
-        with patch('git_repo_jumper.cli.commands.select.print_error') as mock_error:
+        with patch(
+            'git_repo_jumper.cli.commands.select.print_error'
+        ) as mock_error:
             command.run()
         mock_error.assert_called_once()
 
@@ -219,6 +248,8 @@ class TestRunErrorHandling:
         service = MagicMock()
         service.get_config.side_effect = RuntimeError('unexpected')
         command = SelectCommand(service)
-        with patch('git_repo_jumper.cli.commands.select.print_error') as mock_error:
+        with patch(
+            'git_repo_jumper.cli.commands.select.print_error'
+        ) as mock_error:
             command.run()
         mock_error.assert_called_once()

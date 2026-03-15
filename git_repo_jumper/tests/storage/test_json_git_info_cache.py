@@ -1,6 +1,8 @@
 import json
 import pytest
-from git_repo_jumper.storage.git_info_cache.json import JsonGitInfoCache, CACHE_FILE_NAME
+from git_repo_jumper.storage.git_info_cache.json import (
+    JsonGitInfoCache, CACHE_FILE_NAME
+)
 from git_repo_jumper.domain.models import GitInfo
 from git_repo_jumper.domain.errors import GitInfoCacheError
 
@@ -18,13 +20,17 @@ class TestSetStorageParentPath:
     def test_raises_git_info_cache_error_when_dir_missing(self):
         cache = JsonGitInfoCache()
         with pytest.raises(GitInfoCacheError):
-            cache.set_storage_parent_path('/nonexistent/dir/that/cannot/be/created')
+            cache.set_storage_parent_path(
+                '/nonexistent/dir/that/cannot/be/created'
+            )
 
 
 class TestSaveGitInfo:
     def test_writes_date_to_json(self, tmp_path):
         cache = JsonGitInfoCache(tmp_path)
-        git_info = GitInfo(valid=True, current_branch_name='main', status='✓', changes=0)
+        git_info = GitInfo(
+            valid=True, current_branch_name='main', status='✓', changes=0
+        )
         cache.save_git_info({'/repo': git_info}, '2026-03-15T10:00:00')
         data = json.loads((tmp_path / CACHE_FILE_NAME).read_text())
         assert data['date_and_time'] == '2026-03-15T10:00:00'
@@ -52,7 +58,9 @@ class TestGetGitInfo:
 
     def test_returns_date_string(self, tmp_path):
         cache = JsonGitInfoCache(tmp_path)
-        git_info = GitInfo(valid=True, current_branch_name='main', status='✓', changes=0)
+        git_info = GitInfo(
+            valid=True, current_branch_name='main', status='✓', changes=0
+        )
         cache.save_git_info({'/repo': git_info}, '2026-01-01T00:00:00')
         date, _ = cache.get_git_info()
         assert date == '2026-01-01T00:00:00'

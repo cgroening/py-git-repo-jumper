@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from git_repo_jumper.storage.config.yaml_config_storage import YamlConfigStorage
 from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
 from git_repo_jumper.domain.models import RepoSelectorColumnWidths
@@ -66,19 +65,25 @@ class TestParseRepos:
         assert result == []
 
     def test_uses_folder_name_when_name_missing(self):
-        result = YamlConfigStorage._parse_repos([{'path': '/home/user/myproject'}])
+        result = YamlConfigStorage._parse_repos(
+            [{'path': '/home/user/myproject'}]
+        )
         assert result is not None
         assert result[0].name == 'myproject'
 
     def test_parses_show_and_fav_flags(self):
-        repos_raw = [{'path': '/some/path', 'name': 'r', 'show': False, 'fav': True}]
+        repos_raw = [
+            {'path': '/some/path', 'name': 'r', 'show': False, 'fav': True}
+        ]
         result = YamlConfigStorage._parse_repos(repos_raw)
         assert result is not None
         assert result[0].show is False
         assert result[0].fav is True
 
     def test_defaults_show_true_fav_false(self):
-        result = YamlConfigStorage._parse_repos([{'path': '/some/path', 'name': 'r'}])
+        result = YamlConfigStorage._parse_repos(
+            [{'path': '/some/path', 'name': 'r'}]
+        )
         assert result is not None
         assert result[0].show is True
         assert result[0].fav is False
@@ -94,15 +99,21 @@ class TestParseRepoSelectorColumnWidths:
         assert isinstance(result, RepoSelectorColumnWidths)
 
     def test_parses_custom_name_width(self):
-        result = YamlConfigStorage._parse_repo_selector_column_widths({'name': 30})
+        result = YamlConfigStorage._parse_repo_selector_column_widths(
+            {'name': 30}
+        )
         assert result.name == 30
 
     def test_parses_custom_status_width(self):
-        result = YamlConfigStorage._parse_repo_selector_column_widths({'status': 12})
+        result = YamlConfigStorage._parse_repo_selector_column_widths(
+            {'status': 12}
+        )
         assert result.status == 12
 
     def test_uses_defaults_for_unspecified_columns(self):
         defaults = RepoSelectorColumnWidths()
-        result = YamlConfigStorage._parse_repo_selector_column_widths({'name': 30})
+        result = YamlConfigStorage._parse_repo_selector_column_widths(
+            {'name': 30}
+        )
         assert result.current_branch_name == defaults.current_branch_name
         assert result.github_repo_name == defaults.github_repo_name

@@ -1,5 +1,4 @@
 from pathlib import Path
-import pytest
 from git_repo_jumper.domain.errors import (
     ConfigNotFoundError, ConfigParseError, SelectedRepoPathSaveError,
     ConfiguredGitToolNotFoundError, GitInfoCacheError
@@ -44,7 +43,9 @@ class TestConfigParseError:
 
 class TestSelectedRepoPathSaveError:
     def test_is_exception(self):
-        err = SelectedRepoPathSaveError('/tmp/selected-repo.txt', 'permission denied')
+        err = SelectedRepoPathSaveError(
+            '/tmp/selected-repo.txt', 'permission denied'
+        )
         assert isinstance(err, Exception)
 
     def test_str_contains_file_path(self):

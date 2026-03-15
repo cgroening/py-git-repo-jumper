@@ -1,6 +1,5 @@
-from pathlib import Path
 from git_repo_jumper.domain.models import (
-    Repo, Config, RepoSelectorColumnWidths, GitInfo
+    Repo, RepoSelectorColumnWidths, GitInfo
 )
 
 
