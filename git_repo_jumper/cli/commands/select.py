@@ -1,8 +1,11 @@
-# import pprint
 import sys
-from datetime import datetime
 from typing import Any
+from collections.abc import Callable
+from datetime import datetime
 from rich.console import Console
+from rich.progress import (
+    BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
+)
 from rich.table import Table
 from InquirerPy import inquirer
 from InquirerPy import get_style  # type: ignore
@@ -127,23 +130,85 @@ class SelectCommand:
         """
         Returns all repositories that are not configured to be hidden;
         including git infos.
+
+        If self._use_cached_data is True, it will attempt to use cached git info
+        data and print a warning about the age of the data.
+
+        If cached data is not available when requested or if any error occurs
+        while retrieving the repositories, an error message is printed
+        and None is returned.
+
+        Furthermore, the progress of loading git status data is displayed using
+        a Rich progress bar if not using cached data. The progress bar is
+        updated via the `on_progress` callback function, which is passed to the
+        service method that retrieves the repositories. The callback updates
+        the progress bar with the current repository name and the number of
+        repositories processed out of the total.
+
+        Returns:
+        --------
+        list[Repo] | None
+            A list of visible repositories with git info if successful or None
+            if an error occurred or if no repositories are found.
         """
+        on_progress: Callable[[str, int, int], None] | None = None
+        progress: Progress | None = None
+
+        if not self._use_cached_data:
+            progress, on_progress = self._setup_progress_callback()
         try:
             visible_repos = self._service.get_visible_repos_with_git_status(
                 do_fetch=self._do_fetch,
-                use_cached_data=self._use_cached_data
+                use_cached_data=self._use_cached_data,
+                on_progress=on_progress,
             )
         except GitInfoCacheError as e:
             print_error(str(e))
             return None
         except Exception as e:
-            print_error(f'Unexpected error while retrieving repositories: {str(e)}')
+            print_error(
+                f'Unexpected error while retrieving repositories: {str(e)}'
+            )
             return None
+        finally:
+            if progress:
+                progress.stop()
 
         if not visible_repos:
             print_error('No repositories found in config.')
             return None
         return visible_repos
+
+    def _setup_progress_callback(self) \
+    -> tuple[Progress, Callable[[str, int, int], None]]:
+        """
+        Sets up and returns a callback function for updating the Rich progress
+        bar during git info retrieval. The callback will be passed to the
+        service method and updates the progress bar with the current repository
+        name and the number of repositories processed out of the total while
+        repositories are processed.
+
+        Returns:
+        --------
+        tuple[Progress, Callable[[str, int, int], None]]
+            A tuple containing the Rich Progress instance and the on_progress
+            callback function.
+        """
+        progress = Progress(
+            SpinnerColumn(), BarColumn(), TaskProgressColumn(),
+            TextColumn('[cyan]{task.description}'),
+            console=console, transient=True,
+        )
+        task_id = progress.add_task('Loading git status...', total=None)
+        progress.start()
+
+        def on_progress(repo_name: str, current: int, total: int) -> None:
+            progress.update(
+                task_id, total=total, completed=current,
+                description=f'[bold]{repo_name}[/bold]',
+            )
+
+        return progress, on_progress
 
     def _warn_about_cache_usage(self) -> None:
         """
@@ -231,7 +296,9 @@ class SelectCommand:
 
         star = '★ ' if repo.fav else '  '
         name = str_fix(repo.name, col_widths.name)
-        branch = str_fix(git_info.current_branch_name or '-', col_widths.current_branch_name)
+        branch = str_fix(
+            git_info.current_branch_name or '-', col_widths.current_branch_name
+        )
         status = str_fix(git_info.status or '-', col_widths.status)
         github_repo_name = str_fix(
             git_info.github_repo_name or '-', col_widths.github_repo_name
@@ -322,7 +389,8 @@ class SelectCommand:
                 )
             if git.current_branch_name:
                 max_widths['current_branch_name'] = max(
-                    max_widths['current_branch_name'], len(git.current_branch_name)
+                    max_widths['current_branch_name'],
+                    len(git.current_branch_name)
                 )
             if git.status:
                 max_widths['status'] = max(
@@ -432,8 +500,6 @@ class SelectCommand:
         table.add_row('Path:', f'[magenta]{repo.path}[/magenta]')
 
         if git_program_name:
-            table.add_row(
-                'Opening in:', f'[green]{git_program_name}[/green]'
-            )
+            table.add_row('Opening in:', f'[green]{git_program_name}[/green]')
 
         console.print(table)

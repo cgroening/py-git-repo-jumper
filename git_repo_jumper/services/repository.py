@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import datetime
 from git_repo_jumper.domain.errors import (
     SelectedRepoPathSaveError, GitInfoCacheError
@@ -72,7 +73,10 @@ class GitRepoService:
         return False
 
     def get_visible_repos_with_git_status(
-        self, do_fetch: bool = False, use_cached_data: bool = False
+        self,
+        do_fetch: bool = False,
+        use_cached_data: bool = False,
+        on_progress: Callable[[str, int, int], None] | None = None,
     ) -> list[Repo]:
         """
         Returns a list of all repos not configured as hidden including git
@@ -102,7 +106,9 @@ class GitRepoService:
         if use_cached_data and git_info_cache:
             self._add_cached_git_status_to_repos(repos, git_info_cache)
         else:
-            repos = self._add_current_git_status_to_repos(repos, do_fetch)
+            repos = self._add_current_git_status_to_repos(
+                repos, do_fetch, on_progress
+            )
 
         return repos
 
@@ -176,14 +182,20 @@ class GitRepoService:
         return repos
 
     def _add_current_git_status_to_repos(
-            self, repos: list[Repo], do_fetch: bool = False
+        self,
+        repos: list[Repo],
+        do_fetch: bool = False,
+        on_progress: Callable[[str, int, int], None] | None = None,
     ) -> list[Repo]:
         """
         Adds the current git status information to each repository in the
         given list.
         """
         git_infos: dict[str, GitInfo] = {}
-        for repo in repos:
+        total = len(repos)
+        for i, repo in enumerate(repos):
+            if on_progress:
+                on_progress(repo.name, i + 1, total)
             repo.git_info = self._git_client.get_git_status(
                 repo.path, self.get_config().github_username, do_fetch
             )
