@@ -419,7 +419,7 @@ class SelectCommand:
         header_line = f'     {name} │ {branch} │ {status} │ {github_repo_name}'
 
         print()  # Empty line for better spacing before the prompt
-        return inquirer.fuzzy(  # type: ignore
+        result = inquirer.fuzzy(  # type: ignore
             message=header_line,
             choices=choices,
             qmark='',
@@ -434,6 +434,13 @@ class SelectCommand:
                 'question': 'bold', 'pointer': 'fg:#f4f4f4 bg:#522a37'
             }, style_override=False)
         ).execute()
+
+        # Clear the 2 lines InquirerPy leaves behind after selection
+        # (the question/header line and the selected item line)
+        sys.stdout.write('\033[2A\033[0J')
+        sys.stdout.flush()
+
+        return result
 
     def _handle_selected_repo(self, selected_id: int | None) -> None:
         """
