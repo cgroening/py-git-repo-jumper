@@ -1,14 +1,30 @@
 [project]
 name = "git-repo-jumper"
-version = "0.1.0"
+version = "0.1.1"
 description = "A fast terminal-based Git repository selector with fuzzy finding"
 readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Corvin Gröning" }
+]
+keywords = ["git", "cli", "tui", "fuzzy-finder", "repository"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Environment :: Console",
+    "Topic :: Software Development :: Version Control :: Git",
+]
 dependencies = [
     "InquirerPy>=0.3.4",
     "PyYAML>=6.0.0",
     "rich>=14.3.3",
     "typer>=0.24.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/cgroening/py-git-repo-jumper"
+Repository = "https://github.com/cgroening/py-git-repo-jumper"
+Changelog = "https://github.com/cgroening/py-git-repo-jumper/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
