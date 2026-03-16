@@ -6,10 +6,9 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 [![PyPI](https://img.shields.io/pypi/v/git-repo-jumper)](https://pypi.org/project/git-repo-jumper/)
 
-![Logo](images/logo_dark_1.png)
-
-![Screenshot](images/screenshot_1.png)
-![Screenshot](images/screenshot_2.png)
+![Logo](https://raw.githubusercontent.com/cgroening/py-git-repo-jumper/main/images/logo_dark_1.png)
+![Screenshot](https://raw.githubusercontent.com/cgroening/py-git-repo-jumper/main/images/screenshot_1.png)
+![Screenshot](https://raw.githubusercontent.com/cgroening/py-git-repo-jumper/main/images/screenshot_2.png)
 
 ## ✨ Features
 
