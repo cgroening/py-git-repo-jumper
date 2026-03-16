@@ -4,6 +4,7 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+[![PyPI](https://img.shields.io/pypi/v/git-repo-jumper)](https://pypi.org/project/git-repo-jumper/)
 
 ![Logo](images/logo_dark_1.png)
 
@@ -46,6 +47,16 @@ A fast and elegant terminal-based Git repository selector with fuzzy finding. Qu
   ```
 
 ### Install
+
+### Via pip
+
+```zsh
+pip install git-repo-jumper
+```
+
+[git-repo-jumper on PyPI](https://pypi.org/project/git-repo-jumper/)
+
+### From Source
 
 1. Clone this repository:
    ```zsh
