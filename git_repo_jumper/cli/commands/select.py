@@ -80,8 +80,8 @@ class SelectCommand:
                 instructions += f' and open it in [magenta]{gittool}[/magenta].'
 
         instructions += (
-            '\n\n[yellow]Use arrow keys to navigate, type to filter and '
-            'press Enter to select.[/yellow]'
+            '\n[dim]Run [bold]rjump --help[/bold] for more information and '
+            'available options.[/dim]'
         )
 
         print_custom_panel(f'{application_name}\n\n{instructions}', 'cyan')
