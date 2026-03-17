@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-–
+– Adjust column stretch priorities of the repository selector so that available extra width is distributed to the status column first
 
 ### Fixed
 
