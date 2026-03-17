@@ -1,6 +1,6 @@
 [project]
 name = "git-repo-jumper"
-version = "0.1.1"
+version = "0.1.2"
 description = "A fast terminal-based Git repository selector with fuzzy finding"
 readme = "README.md"
 requires-python = ">=3.10"
