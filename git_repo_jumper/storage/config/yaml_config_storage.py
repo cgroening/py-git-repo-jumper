@@ -1,6 +1,8 @@
 import yaml
 from pathlib import Path
-from git_repo_jumper.domain.models import Config, Repo, RepoSelectorColumnWidths
+from git_repo_jumper.domain.models import (
+    Config, Repo, RepoSelectorColumnWidths, GitInfo
+)
 from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
 from git_repo_jumper.storage.config.config_storage import BaseConfigStorage
 
@@ -78,12 +80,15 @@ class YamlConfigStorage(BaseConfigStorage):
         )
         repos = self._parse_repos(data.get('repos', None))
 
+        example_mode = data.get('example-mode', False)
+
         return Config(
             config_path=self._config_path,
             repo_selector_column_widths=repo_selector_column_widths,
             git_tool_name=git_tool_name,
             github_username=github_username,
-            repos=repos
+            repos=repos,
+            example_mode=example_mode,
         )
 
     @staticmethod
@@ -143,7 +148,29 @@ class YamlConfigStorage(BaseConfigStorage):
                 name=repo_name,
                 path=repo_path,
                 show=repo.get('show', True),
-                fav=repo.get('fav', False)
+                fav=repo.get('fav', False),
+                example_git_info=YamlConfigStorage._parse_example_git_info(
+                    repo.get('example-git-info', None)
+                )
             ))
 
         return repos
+
+    @staticmethod
+    def _parse_example_git_info(example_git_info_raw: dict | None) -> GitInfo:
+        """
+        Parses the example git info from the raw YAML data and returns a
+        GitInfo object.
+        """
+        if not isinstance(example_git_info_raw, dict):
+            return GitInfo.invalid('Invalid example_git_info format')
+
+        return GitInfo(
+            current_branch_name=example_git_info_raw.get(
+                'current-branch-name', 'main'
+            ),
+            status=example_git_info_raw.get('status', '✓'),
+            github_repo_name=example_git_info_raw.get('github-repo-name', None),
+            valid=True
+        )
+

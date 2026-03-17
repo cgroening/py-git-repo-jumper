@@ -18,14 +18,17 @@ class Repo:
         Whether to show this repository in the list (default True).
     fav : bool
         Whether this repository is a favorite (default False).
-    git_status : GitStatus | None
+    git_info : GitStatus | None
         Git status information for this repository or None if not yet fetched.
+    example_git_info : GitStatus | None
+        Example git status information used in example mode.
     """
     name: str
     path: str
     show: bool = True
     fav: bool = False
     git_info: GitInfo | None = None
+    example_git_info: GitInfo | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -38,6 +41,7 @@ class Config:
     git_tool_name: str | None
     github_username: str | None
     repos: list[Repo] | None
+    example_mode: bool = False
 
 
 @dataclass(slots=True)

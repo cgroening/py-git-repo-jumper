@@ -101,9 +101,13 @@ class GitRepoService:
         except Exception as e:
             raise GitInfoCacheError(git_info_storage_parent_path, str(e))
 
-        # Retrieve git status information from cache or by running git commands,
-        # depending on the `use_cached_data` flag and cache availability
-        if use_cached_data and git_info_cache:
+        # Retrieve git status information from
+        # - example data if in example mode,
+        # - cache if `use_cached_data` is True and cache is available
+        # - or by running git commands
+        if self._config and self._config.example_mode:
+            self._add_example_git_status_to_repos(repos)
+        elif use_cached_data and git_info_cache:
             self._add_cached_git_status_to_repos(repos, git_info_cache)
         else:
             repos = self._add_current_git_status_to_repos(
@@ -209,6 +213,18 @@ class GitRepoService:
             )
         except Exception:
             pass  # Don't handle because error is handled when reading cache
+
+        return repos
+
+    def _add_example_git_status_to_repos(self, repos: list[Repo]) -> list[Repo]:
+        """
+        Sets the field `git_info` of each repository in the given list to the
+        value of the field `example_git_info`. This is used in example mode to
+        show example git status information without actually running git
+        commands or reading from the cache.
+        """
+        for repo in repos:
+            repo.git_info = repo.example_git_info
 
         return repos
 

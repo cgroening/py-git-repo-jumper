@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-–
+– Example mode: when `example-mode: true` is set in the config, the repository selector displays example git info (`current-branch-name`, `status` and `github-repo-name`) defined per repository via `example-git-info` instead of fetching live data – useful for demos and screenshots
 
 ### Changed
 
