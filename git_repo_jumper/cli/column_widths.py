@@ -7,8 +7,8 @@ class ColumnConfig:
     """
     Configuration for a single column.
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
     min_width : int
         The minimum width of the column.
     max_width : int
@@ -48,8 +48,8 @@ class ColumnWidthsAdjuster:
     lower priority values are adjusted first. Columns with the same priority
     are adjusted equally, with overflow redistributed among uncapped columns.
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
     column_config : dict[str, ColumnConfig]
         Configuration for each column, keyed by column name.
     available_width : int
@@ -78,8 +78,8 @@ class ColumnWidthsAdjuster:
         """
         Set the available width for columns, ensuring it's non-negative.
 
-        Raises:
-        -------
+        Raises
+        ------
         ValueError
             If the available width is negative.
         """

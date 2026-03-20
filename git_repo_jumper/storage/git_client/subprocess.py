@@ -15,15 +15,15 @@ class SubprocessGitClient(BaseGitClient):
         """
         Determines the git status of a repository.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         repo_path : str
             Path to the repository.
         github_username : str
             GitHub username to use when extracting repo name.
 
-        Returns:
-        --------
+        Returns
+        -------
         GitStatus
             A GitStatus object containing `valid` (`bool`),
             `error` (`str | None`), `branch` (`str`), `status (`str`),
@@ -67,15 +67,15 @@ class SubprocessGitClient(BaseGitClient):
         """
         Opens the repository in the specified git program.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         repo_path : str
             Path to the repository.
         git_program : str
             Git program to use (e.g., lazygit, gitui, tig).
 
-        Raises:
-        -------
+        Raises
+        ------
         ConfiguredGitToolNotFoundError
             If the specified git program is not found or fails to open.
         """
@@ -178,15 +178,15 @@ class SubprocessGitClient(BaseGitClient):
         """
         Extracts the GitHub repository name from git remote URL.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         repo_path : str
             Path to the remote repository.
         github_username : str
             GitHub username to remove from the repo name if present.
 
-        Returns:
-        --------
+        Returns
+        -------
         str
             GitHub repository name in "owner/repo" format or "-" if not found.
         """

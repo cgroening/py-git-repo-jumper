@@ -52,8 +52,8 @@ def str_with_fixed_width(text: str, width: int, align: str = 'left') -> str:
     an ellipsis (…). If the text is shorter, it will be padded with spaces
     according to the specified alignment.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     text : str
         The input string to be formatted.
     width : int
@@ -62,20 +62,20 @@ def str_with_fixed_width(text: str, width: int, align: str = 'left') -> str:
         The alignment of the text within the width: 'left', 'right' or 'center'
         (by default 'left').
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> str_with_fixed_width('Hello, World!', 10)
     'Hello, Wo…'
     >>> str_with_fixed_width('Hello', 10)
     'Hello     '
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the alignment is not one of 'left', 'right' or 'center'.
 
-    Returns:
-    --------
+    Returns
+    -------
     str
         The formatted string with the specified width and alignment.
     """

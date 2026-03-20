@@ -145,8 +145,8 @@ class SelectCommand:
         the progress bar with the current repository name and the number of
         repositories processed out of the total.
 
-        Returns:
-        --------
+        Returns
+        -------
         list[Repo] | None
             A list of visible repositories with git info if successful or None
             if an error occurred or if no repositories are found.
@@ -188,8 +188,8 @@ class SelectCommand:
         name and the number of repositories processed out of the total while
         repositories are processed.
 
-        Returns:
-        --------
+        Returns
+        -------
         tuple[Progress, Callable[[str, int, int], None]]
             A tuple containing the Rich Progress instance and the on_progress
             callback function.

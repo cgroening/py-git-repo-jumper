@@ -21,8 +21,8 @@ class JsonGitInfoCache(BaseGitInfoCache):
         """
         Sets the path to the configuration file if provided is not None.
 
-        Raises:
-        -------
+        Raises
+        ------
         GitInfoCacheError
             If there is an error accessing the git info cache.
         """
@@ -87,8 +87,8 @@ class JsonGitInfoCache(BaseGitInfoCache):
         """
         Returns all cached Git infos from the JSON file.
 
-        Returns:
-        --------
+        Returns
+        -------
         tuple[str | None, dict[str, GitInfo]] | None:
             A tuple containing the date and time string of when the Git infos
             were cached and a dictionary mapping repository paths to their

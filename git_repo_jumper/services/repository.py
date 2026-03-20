@@ -83,8 +83,8 @@ class GitRepoService:
         status information if they coule be retrieved (from cache or by
         running git).
 
-        Raises:
-        -------
+        Raises
+        ------
         GitInfoCacheError
             If there is an error accessing the git info cache.
         """
@@ -124,13 +124,13 @@ class GitRepoService:
         the last opened repository after the git program exits and change the
         current directory of the terminal to that path.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         repo_path : str
             The path of the repository to store.
 
-        Raises:
-        -------
+        Raises
+        ------
         SelectedRepoPathSaveError
             If there is an error saving the repository path.
         """

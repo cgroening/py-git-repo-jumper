@@ -8,8 +8,8 @@ class Repo:
     """
     Repository information from config.
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
     name : str
         Repository name (can be derived from path if missing).
     path : str
@@ -65,8 +65,8 @@ class GitInfo:
     """
     Git status information for a repository.
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
     valid : bool
         Whether the repository path is valid.
     error : str | None

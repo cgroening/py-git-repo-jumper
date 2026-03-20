@@ -29,8 +29,8 @@ class YamlConfigStorage(BaseConfigStorage):
       - ...
     ```
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
     _config_path: str
         The path to the YAML config file.
     """
@@ -47,15 +47,15 @@ class YamlConfigStorage(BaseConfigStorage):
         """
         Loads the config from the YAML file and returns a Config object.
 
-        Raises:
-        -------
+        Raises
+        ------
         ConfigNotFoundError
             If the config file is not found at the specified path.
         ConfigParseError
             If there is an error parsing the YAML file.
 
-        Returns:
-        --------
+        Returns
+        -------
         Config: The loaded configuration data.
         """
         # Open YAML file
