@@ -11,11 +11,11 @@ from git_repo_jumper.storage.git_info_cache.json import JsonGitInfoCache
 app = typer.Typer(help='Git Repository Jumper', invoke_without_command=True)
 
 
-# Dependency composition: Wire all layers together
-_config_storage = YamlConfigStorage()
-_git_client = SubprocessGitClient()
+# Dependency composition (Composition Root)
+_config_storage   = YamlConfigStorage()
+_git_client       = SubprocessGitClient()
 _git_info_storage = JsonGitInfoCache()
-_service = GitRepoService(_config_storage, _git_client, _git_info_storage)
+_service          = GitRepoService(_config_storage, _git_client, _git_info_storage)
 
 
 @app.callback()
