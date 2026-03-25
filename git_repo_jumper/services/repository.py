@@ -4,7 +4,7 @@ from git_repo_jumper.domain.errors import (
     SelectedRepoPathSaveError, GitInfoCacheError
 )
 from git_repo_jumper.domain.models import Config, GitInfo, Repo
-from git_repo_jumper.storage.config.config_storage import BaseConfigStorage
+from git_repo_jumper.storage.config.base import BaseConfigStorage
 from git_repo_jumper.storage.git_client.base import BaseGitClient
 from git_repo_jumper.storage.git_info_cache.base import BaseGitInfoCache
 

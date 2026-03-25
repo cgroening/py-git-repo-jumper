@@ -1,5 +1,5 @@
 import pytest
-from git_repo_jumper.storage.config.yaml_config_storage import YamlConfigStorage
+from git_repo_jumper.storage.config.yaml import YamlConfigStorage
 from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
 from git_repo_jumper.domain.models import RepoSelectorColumnWidths
 

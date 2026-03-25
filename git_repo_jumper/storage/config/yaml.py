@@ -4,7 +4,7 @@ from git_repo_jumper.domain.models import (
     Config, Repo, RepoSelectorColumnWidths, GitInfo
 )
 from git_repo_jumper.domain.errors import ConfigNotFoundError, ConfigParseError
-from git_repo_jumper.storage.config.config_storage import BaseConfigStorage
+from git_repo_jumper.storage.config.base import BaseConfigStorage
 
 
 DEFAULT_CONFIG_PATH = Path.home() / '.config' / 'git-repo-jumper' / 'config.yaml'
